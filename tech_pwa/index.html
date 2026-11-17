@@ -3,23 +3,26 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0f172a">
+  <meta name="theme-color" content="#130e0b">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="DoorFlex">
-  <link rel="manifest" href="./manifest.json?v=31">
+  <link rel="manifest" href="./manifest.json?v=32">
   <link rel="icon" type="image/x-icon" href="./favicon.ico?v=21">
   <link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32.png?v=21">
   <link rel="icon" type="image/png" sizes="16x16" href="./icons/favicon-16.png?v=21">
   <link rel="apple-touch-icon" href="./icons/icon-180.png?v=21">
-  <link rel="stylesheet" href="./app.css?v=31">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./app.css?v=32">
   <title>DoorFlex Tech</title>
 </head>
 <body>
   <div class="app">
     <header class="header">
-      <h1>DoorFlex <span style="color:var(--accent)">Parts</span></h1>
+      <h1>DoorFlex <span class="brand-sub">Parts</span></h1>
       <div class="sub" id="sub">Loading catalog…</div>
       <div class="search">
         <input type="search" id="q" placeholder="Search part, SKU…" autocomplete="off" enterkeyhint="search">
@@ -46,6 +49,6 @@
   <div class="job-pending-badge" id="jobpending" hidden></div>
   <div class="sync-indicator" id="sync"></div>
 
-  <script src="./app.js?v=31"></script>
+  <script src="./app.js?v=32"></script>
 </body>
 </html>

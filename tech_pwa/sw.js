@@ -2,7 +2,7 @@
 // below derives from it so a version bump can never drift between this list
 // and index.html's own ?v=NN links again (that drift is what previously left
 // SHELL pinned to stale ?v=25 URLs while VERSION had already moved to v27).
-const ASSET_V = '31';
+const ASSET_V = '32';
 const VERSION = `v${ASSET_V}`;
 const SHELL = [
   './',

@@ -1,18 +1,30 @@
 :root {
-  --bg: #0f172a;
-  --card: #1e293b;
-  --card-2: #243348;
-  --surface: #243348;
-  --surface-2: #2f4157;
-  --border: #334155;
-  --text: #e2e8f0;
-  --muted: #94a3b8;
-  --accent: #22d3ee;
-  --ok: #34d399;
-  --warn: #fbbf24;
-  --danger: #f87171;
-  --radius: 16px;
+  /* Same design system as the office dashboard (templates/partials/styles.html):
+   * warm neutrals, one orange accent, Public Sans, square corners. Light
+   * surfaces also read better outdoors in direct sun than the old dark theme. */
+  --bg: oklch(0.97 0.005 50);
+  --card: oklch(0.995 0.003 50);
+  --card-2: oklch(0.955 0.006 50);
+  --surface: oklch(0.955 0.006 50);
+  --surface-2: oklch(0.92 0.007 50);
+  --border: oklch(0.88 0.006 50);
+  --text: oklch(0.15 0.01 50);
+  --muted: oklch(0.5 0.012 50);
+  --accent: oklch(0.62 0.16 55);
+  --accent-hover: oklch(0.57 0.17 55);
+  --accent-soft: oklch(0.95 0.04 60);
+  --ink: oklch(0.14 0.012 50);
+  --ink-text: oklch(0.85 0.008 50);
+  --ok: oklch(0.5 0.14 145);
+  --ok-soft: oklch(0.95 0.045 145);
+  --warn: oklch(0.52 0.12 70);
+  --warn-soft: oklch(0.95 0.06 85);
+  --danger: oklch(0.52 0.18 30);
+  --danger-soft: oklch(0.95 0.04 30);
+  --on-accent: #fff;
+  --radius: 0;
   --space: 12px;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -29,7 +41,7 @@ html, body { height: 100%; overflow: hidden; }
  * tapping a card opens the detail instantly. */
 html { touch-action: manipulation; }
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, system-ui, sans-serif;
+  font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
   background: var(--bg);
   color: var(--text);
   -webkit-tap-highlight-color: transparent;
@@ -49,17 +61,32 @@ body {
   position: sticky;
   top: 0;
   z-index: 10;
-  background: var(--bg);
-  padding: calc(env(safe-area-inset-top, 0px) + 12px) var(--space) 8px;
+  background: var(--ink);
+  color: var(--ink-text);
+  padding: calc(env(safe-area-inset-top, 0px) + 12px) var(--space) 12px;
 }
 
 .header h1 {
-  font-size: 20px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 18px;
   font-weight: 800;
-  letter-spacing: -0.02em;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #fff;
+}
+.header h1 .brand-sub {
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: oklch(0.65 0.01 50);
 }
 
-.header .sub { color: var(--muted); font-size: 13px; }
+.header .sub { color: oklch(0.7 0.01 50); font-size: 13px; margin-top: 2px; }
+.header .search input { background: var(--card); }
+.header .sync-btn { background: oklch(0.22 0.01 50); color: #fff; border: 1px solid oklch(0.3 0.01 50); }
 
 .search {
   margin-top: 10px;
@@ -74,7 +101,7 @@ body {
   color: var(--text);
   font-size: 18px;
   padding: 12px 14px;
-  border-radius: 12px;
+  border-radius: 0;
   outline: none;
 }
 .search input::placeholder { color: var(--muted); }
@@ -82,7 +109,7 @@ body {
 .install-hint {
   margin: 10px var(--space) 0;
   padding: 10px 12px;
-  border-radius: 12px;
+  border-radius: 0;
   background: var(--surface);
   border: 1px solid var(--border);
   color: var(--muted);
@@ -111,7 +138,7 @@ body {
 
 .btn {
   border: none;
-  border-radius: 12px;
+  border-radius: 0;
   font-size: 16px;
   font-weight: 700;
   padding: 12px 16px;
@@ -127,7 +154,7 @@ body {
   padding: 0;
   font-size: 22px;
   background: var(--card-2);
-  border: 1px solid rgba(255,255,255,0.08);
+  border: 1px solid var(--border);
 }
 
 .sync-indicator {
@@ -140,8 +167,8 @@ body {
   top: calc(env(safe-area-inset-top, 0px) + 84px);
   right: 12px;
   background: var(--card-2);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 999px;
+  border: 1px solid var(--border);
+  border-radius: 0;
   padding: 8px 14px;
   font-size: 13px;
   color: var(--muted);
@@ -184,14 +211,14 @@ body {
 
 .card .placeholder {
   height: 72px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, var(--card-2), #2c3a52);
+  border-radius: 0;
+  background: var(--card-2);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 34px;
   font-weight: 800;
-  color: rgba(226,232,240,0.35);
+  color: oklch(0.72 0.02 55);
   letter-spacing: 0.02em;
 }
 
@@ -211,13 +238,13 @@ body {
   display: inline-block;
   align-self: flex-start;
   padding: 3px 10px;
-  border-radius: 999px;
+  border-radius: 0;
   font-size: 12px;
   font-weight: 700;
 }
-.badge.ok { background: rgba(52,211,153,0.18); color: var(--ok); }
-.badge.warn { background: rgba(251,191,36,0.18); color: var(--warn); }
-.badge.danger { background: rgba(248,113,113,0.18); color: var(--danger); }
+.badge.ok { background: var(--ok-soft); color: var(--ok); }
+.badge.warn { background: var(--warn-soft); color: var(--warn); }
+.badge.danger { background: var(--danger-soft); color: var(--danger); }
 
 /* Card badge: top-right corner, so it never covers the product placeholder
  * (initial letter) in the middle of the card. */
@@ -262,9 +289,9 @@ body {
   position: fixed;
   top: calc(env(safe-area-inset-top, 0px) + 10px);
   right: 12px;
-  background: #7c2d12;
-  border: 1px solid rgba(251,191,36,0.4);
-  border-radius: 999px;
+  background: var(--warn-soft);
+  border: 1px solid oklch(0.52 0.12 70 / 0.35);
+  border-radius: 0;
   padding: 6px 14px;
   font-size: 13px;
   font-weight: 700;
@@ -299,7 +326,7 @@ body {
   color: var(--text);
   padding: 8px 12px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 0;
   font-size: 22px;
   line-height: 1;
 }
@@ -337,7 +364,7 @@ body {
   gap: 10px;
   margin: 0 12px 8px;
   padding: 10px 12px;
-  border-radius: 12px;
+  border-radius: 0;
   background: var(--card);
   border-left: 4px solid var(--accent);
   font-size: 14px;
@@ -350,9 +377,9 @@ body {
   min-height: 36px;
   padding: 6px 12px;
   border: none;
-  border-radius: 10px;
-  background: #1d4ed8;
-  color: #fff;
+  border-radius: 0;
+  background: var(--ink);
+  color: var(--on-accent);
   font-family: inherit;
   font-size: 13px;
   font-weight: 700;
@@ -369,7 +396,7 @@ body {
   min-width: 32px;
   min-height: 32px;
   border: none;
-  border-radius: 8px;
+  border-radius: 0;
   background: transparent;
   color: var(--muted);
   font-size: 15px;
@@ -394,7 +421,7 @@ body {
   color: var(--text);
   font-size: 15px;
   padding: 10px 12px;
-  border-radius: 10px;
+  border-radius: 0;
   outline: none;
   font-family: inherit;
 }
@@ -404,7 +431,7 @@ body {
 /* Closed-job lock banner */
 .job-locked-banner {
   padding: 12px 14px;
-  border-radius: 12px;
+  border-radius: 0;
   background: var(--card);
   border-left: 4px solid var(--ok);
   font-size: 15px;
@@ -424,7 +451,7 @@ body {
   padding: 16px;
 }
 
-.deduct-row .confirm { background: #16a34a; }
+.deduct-row .confirm { background: var(--ok); color: var(--on-accent); }
 
 .stepper-row {
   display: flex;
@@ -446,7 +473,7 @@ body {
   display: inline-flex;
   align-items: stretch;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 0;
   overflow: hidden;
   background: var(--surface);
 }
@@ -524,14 +551,14 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #b45309;
-  color: #fff;
+  background: var(--accent);
+  color: var(--on-accent);
   border: none;
   border-radius: 999px;
   padding: 14px 20px;
   font-size: 15px;
   font-weight: 800;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+  box-shadow: 0 6px 18px oklch(0.15 0.01 50 / 0.18);
   cursor: pointer;
 }
 .fab:active { transform: scale(0.96); }
@@ -549,9 +576,9 @@ body {
   position: fixed;
   bottom: calc(env(safe-area-inset-bottom, 0px) + 70px);
   right: 16px;
-  background: #7c2d12;
-  border: 1px solid rgba(251,191,36,0.4);
-  border-radius: 999px;
+  background: var(--warn-soft);
+  border: 1px solid oklch(0.52 0.12 70 / 0.35);
+  border-radius: 0;
   padding: 6px 14px;
   font-size: 12px;
   font-weight: 700;
@@ -589,7 +616,7 @@ body {
 .wiz-option {
   background: var(--card);
   border: 1px solid transparent;
-  border-radius: 12px;
+  border-radius: 0;
   padding: 16px;
   font-size: 16px;
   font-weight: 700;
@@ -611,7 +638,7 @@ body {
   color: var(--text);
   font-size: 17px;
   padding: 14px;
-  border-radius: 12px;
+  border-radius: 0;
   outline: none;
   font-family: inherit;
 }
@@ -631,7 +658,7 @@ body {
   letter-spacing: 0.02em;
   color: var(--accent);
   background: var(--card);
-  border-radius: 12px;
+  border-radius: 0;
   padding: 12px 14px;
   text-align: center;
 }
@@ -647,14 +674,14 @@ body {
   font-weight: 700;
   font-size: 14px;
   text-align: center;
-  background: rgba(251,191,36,0.1);
-  border-radius: 12px;
+  background: var(--warn-soft);
+  border-radius: 0;
   padding: 12px 14px;
 }
 .wiz-review .quote-banner {
-  background: rgba(248,113,113,0.15);
+  background: var(--danger-soft);
   color: var(--danger);
-  border-radius: 10px;
+  border-radius: 0;
   padding: 10px 12px;
   font-size: 13px;
   font-weight: 700;
@@ -663,7 +690,7 @@ body {
 
 .review-card {
   background: var(--card);
-  border-radius: 14px;
+  border-radius: 0;
   padding: 2px 16px;
 }
 .review-row {
@@ -672,7 +699,7 @@ body {
   justify-content: space-between;
   gap: 16px;
   padding: 11px 0;
-  border-bottom: 1px solid rgba(148,163,184,0.14);
+  border-bottom: 1px solid var(--border);
 }
 .review-row:last-child { border-bottom: none; }
 .review-row .review-label {
@@ -698,8 +725,8 @@ body {
 
 .wiz-nav { display: flex; gap: 10px; margin-top: auto; }
 .wiz-nav .btn { flex: 1; font-size: 17px; padding: 15px; }
-.wiz-nav .btn.next { background: #b45309; }
-.wiz-nav .btn.confirm { background: #16a34a; }
+.wiz-nav .btn.next { background: var(--accent); color: var(--on-accent); }
+.wiz-nav .btn.confirm { background: var(--ok); color: var(--on-accent); }
 .wiz-nav .btn.confirm[disabled] { background: var(--card-2); color: var(--muted); opacity: 0.6; cursor: not-allowed; }
 
 /* ─── My Jobs / Job Detail (capture) ─────────────────────────────────────── */
@@ -707,7 +734,7 @@ body {
 .fab-jobs {
   left: 16px;
   right: auto;
-  background: #1d4ed8;
+  background: var(--ink);
 }
 
 .job-upload-row {
@@ -716,7 +743,7 @@ body {
 .job-upload-row .btn {
   width: 100%;
   background: var(--card-2);
-  border: 1px solid rgba(255,255,255,0.08);
+  border: 1px solid var(--border);
 }
 
 .job-list {
@@ -727,7 +754,7 @@ body {
 
 .job-card {
   background: var(--card);
-  border-radius: 12px;
+  border-radius: 0;
   padding: 14px 16px;
   cursor: pointer;
   border: 1px solid transparent;
@@ -749,7 +776,7 @@ body {
 
 .job-detail-header {
   background: var(--card);
-  border-radius: 12px;
+  border-radius: 0;
   padding: 12px 14px;
   margin-top: -4px;
 }
@@ -774,7 +801,7 @@ body {
   color: var(--text);
   font-size: 16px;
   padding: 12px 14px;
-  border-radius: 12px;
+  border-radius: 0;
   outline: none;
   font-family: inherit;
 }
@@ -804,19 +831,19 @@ body {
   position: fixed;
   bottom: calc(env(safe-area-inset-bottom, 0px) + 70px);
   left: 16px;
-  background: #1e3a8a;
-  border: 1px solid rgba(96,165,250,0.4);
-  border-radius: 999px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 0;
   padding: 6px 14px;
   font-size: 12px;
   font-weight: 700;
-  color: #93c5fd;
+  color: var(--text);
   z-index: 19;
   cursor: default;
 }
 .job-pending-badge.danger {
-  background: #7c2d12;
-  border-color: rgba(248,113,113,0.4);
+  background: var(--danger-soft);
+  border-color: oklch(0.52 0.18 30 / 0.35);
   color: var(--danger);
   cursor: pointer;
 }
