@@ -1,0 +1,58 @@
+{% extends "owner_base.html" %}
+{% block title %}QuickBooks Online{% endblock %}
+{% set active_page = "qbo" %}
+{% block content %}
+<div class="section">
+  <div class="section-header"><h2>QuickBooks Online — DoorFlex invoice automation</h2></div>
+  <p class="text-sm text-muted" style="margin-bottom:var(--space-md)">
+    When a tech closes an invoice in Dispatch, it syncs to QuickBooks Online (via Dispatch's built-in QBO add-on). QBO then fires a webhook to this app, which fetches the invoice, resolves the parts to the DoorFlex catalog, and deducts stock automatically. Techs never touch a separate app.
+  </p>
+
+  {% if not qbo_enabled %}
+    <div class="form-card" style="max-width:720px">
+      <h3>Not configured</h3>
+      <p class="text-sm">Set these environment variables (see <code>DEPLOY.md</code>) and restart the server:</p>
+      <ul class="text-sm">
+        <li><code>QBO_CLIENT_ID</code></li>
+        <li><code>QBO_CLIENT_SECRET</code></li>
+        <li><code>QBO_WEBHOOK_VERIFIER_TOKEN</code></li>
+        <li><code>QBO_ENVIRONMENT</code> — <code>sandbox</code> for controlled testing, <code>production</code> when connecting Nick's real QuickBooks</li>
+        <li><code>QBO_REDIRECT_URI</code> — defaults to <code>{PUBLIC_URL}{ADMIN_PATH}/qbo/callback</code></li>
+      </ul>
+      <p class="text-sm text-muted">All four must be present. Missing any = this page shows "Not configured" and the webhook returns 501.</p>
+    </div>
+  {% elif realm_id %}
+    <div class="form-card" style="max-width:720px">
+      <h3>Connected <span class="status-badge status-ok">Active</span></h3>
+      <table>
+        <tbody>
+          <tr><td>Realm (QBO company id)</td><td><code>{{ realm_id }}</code></td></tr>
+          <tr><td>Access token expires</td><td class="text-muted">{{ info.expires_at or '—' }}</td></tr>
+          <tr><td>Last webhook received</td><td class="text-muted">{{ info.last_webhook_at or 'never yet' }}</td></tr>
+          <tr><td>Connected at</td><td class="text-muted">{{ info.updated_at }}</td></tr>
+        </tbody>
+      </table>
+      <form method="post" action="{{ admin_path }}/qbo/disconnect" style="margin-top:var(--space-md)" onsubmit="return confirm('Disconnect from QuickBooks Online? No more invoice webhooks will be processed until you reconnect.')">
+        <button type="submit" class="btn btn-danger">Disconnect</button>
+      </form>
+    </div>
+  {% else %}
+    <div class="form-card" style="max-width:720px">
+      <h3>Not connected</h3>
+      <p class="text-sm">Click below and approve DoorFlex Inventory on Intuit's consent screen. Read-only invoice/customer access only. Takes 60 seconds.</p>
+      <a href="{{ admin_path }}/qbo/connect" class="btn btn-primary mt-md">Connect QuickBooks Online</a>
+    </div>
+  {% endif %}
+</div>
+
+<div class="section">
+  <div class="section-header"><h3>What this integration does</h3></div>
+  <ul class="text-sm">
+    <li><strong>Auto-deducts stock</strong> from the assigned tech's truck for every invoice line item that maps to a DoorFlex part.</li>
+    <li><strong>Tags each deduction to a Job ID (WO#)</strong> — jobs-today "Parts Used" column populates automatically.</li>
+    <li><strong>Unmatched line items land in <a href="{{ admin_path }}/../dashboard/unmatched">Unmatched Parts</a></strong> for review, exactly like distributor-invoice unmatched rows today.</li>
+    <li><strong>Feeds every existing dashboard tracker</strong>: usage-by-tech, usage-by-truck, usage-by-part, top movers, low-stock alerts. No dashboard changes needed.</li>
+    <li><strong>Never touches invoicing or QBO writes</strong> — read-only consumer. Dispatch remains the invoice source of truth; QBO remains the accounting source of truth.</li>
+  </ul>
+</div>
+{% endblock %}

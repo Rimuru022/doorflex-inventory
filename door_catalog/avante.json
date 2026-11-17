@@ -1,0 +1,15 @@
+{
+  "_source": "06-residential-avante-regular-excel.xlsx (Clopay Avante price sheet, provided by Nick 2026-08-17). Avante is a full-view glass/aluminum model family with NO Series/Design panel styles like Coachman — the model variant itself is the closest thing to an item number. Pricing multipliers and per-glazing part numbers (e.g. GLAZ-8DG) are intentionally NOT modeled here.",
+  "label": "Avante",
+  "models": [
+    {"code": "AX", "label": "AX — Aluminum Frame with Glass", "r_value": null, "width_max_ft": 20},
+    {"code": "AXU", "label": "AXU — Aluminum Frame, Clear Insulated Glass (R-3.8)", "r_value": 3.8, "width_max_ft": 20},
+    {"code": "AV-FT", "label": "AV — Frosted Tempered Glass", "r_value": null, "width_max_ft": 20},
+    {"code": "AV-IT", "label": "AV — Insulated Tempered Glass", "r_value": null, "width_max_ft": 16},
+    {"code": "AV-WL", "label": "AV — White Laminate Glass", "r_value": null, "width_max_ft": 16},
+    {"code": "AV-IF", "label": "AV — Insulated Frosted Glass", "r_value": null, "width_max_ft": 16}
+  ],
+  "height_rule": {"min_in": 72, "max_in": 144, "step_in": 3},
+  "width_rule": {"min_ft": 6, "step_in": 2},
+  "colors": ["White", "Almond", "Desert Tan", "Sandtone"]
+}

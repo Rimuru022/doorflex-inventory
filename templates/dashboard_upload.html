@@ -1,0 +1,113 @@
+{% extends "dashboard_base.html" %}
+{% block title %}Upload Invoice{% endblock %}
+{% set active_page = "upload" %}
+{% block content %}
+<div class="section">
+  <div class="section-header"><h2>Upload Invoice</h2></div>
+  <div class="form-card" style="max-width:600px">
+    <p class="text-sm text-muted" style="margin-bottom:var(--space-md)">Upload a Dispatch invoice PDF to process it through the pipeline. Same result as if it arrived by email.</p>
+    <form method="post" action="/dashboard/upload-invoice" enctype="multipart/form-data">
+      <label>PDF Invoice</label>
+      <input type="file" name="file" accept=".pdf" required>
+      <button type="submit" class="btn btn-primary mt-md">Process Invoice</button>
+    </form>
+  </div>
+</div>
+
+{% if result %}
+<div class="section">
+  <div class="section-header"><h2>Processing Result</h2></div>
+  {% if shortfall_count %}
+  <div class="section" style="background:oklch(0.95 0.05 85 / 0.3);border:1px solid oklch(0.65 0.14 85 / 0.4);padding:var(--space-md);border-radius:var(--radius)">
+    <strong>⚠️ {{ shortfall_count }} item(s) could not be deducted because there was not enough stock.</strong>
+    <p class="text-sm mt-sm">They were sent to <strong>Stock Shortfalls</strong> (Alerts). <strong>Do NOT re-upload this invoice</strong> — resolve the shortfall in <a href="/dashboard/alerts" class="text-sm">Alerts → Stock Shortfalls</a> after fixing the truck/warehouse stock, then it will deduct the next time that item is invoiced.</p>
+  </div>
+  {% endif %}
+  {% for r in result.get("results", []) %}
+  <div class="form-card" style="margin-bottom:var(--space-md)">
+    {% if r.status == "processed" %}
+      <div style="display:flex;align-items:center;gap:var(--space-md);margin-bottom:var(--space-md)">
+        <span class="status-badge status-ok" style="font-size:var(--text-base)">Processed</span>
+        <span class="text-sm text-muted">Invoice {{ result.invoice_id | truncate(30) }}</span>
+      </div>
+      <table>
+        <thead><tr><th>Part</th><th>Qty</th><th>Result</th></tr></thead>
+        <tbody>
+          {% if r.format == "package_pricing" %}
+            <tr><td colspan="3" class="text-sm">Package: <strong>{{ r.package }}</strong></td></tr>
+          {% endif %}
+          {% for d in r.get("deductions", []) %}
+          <tr>
+            <td>{{ d.get("raw_name", d.get("part_id", "")) }}</td>
+            <td>{{ d.get("qty", "") }}</td>
+            <td>{% if d.get("result") %}<span class="status-badge status-ok">Deducted</span>{% else %}<span class="status-badge status-low">{{ d.get("error", "Error") }}</span>{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% if r.get("tech") %}
+      <p class="text-sm text-muted mt-sm">Tech: {{ r.tech }} . Truck: {{ r.truck_id }} . Warehouse: {{ r.warehouse_id }}</p>
+      {% endif %}
+      {% if r.get("fuzzy_pending") %}
+      <div class="mt-md" style="border-top:1px solid var(--color-border);padding-top:var(--space-sm)">
+        <p class="status-badge status-warn">{{ r.fuzzy_pending|length }} item(s) with low-confidence match (pending review)</p>
+        <ul class="text-sm mt-sm">
+          {% for u in r.fuzzy_pending %}
+          <li style="color:var(--color-muted)">{{ u.raw_name }} (x{{ u.quantity }}) ~ matched at {{ u.confidence }}% to a catalog part. <a href="/dashboard/unmatched" class="text-sm">Review</a></li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+      {% if r.get("unmatched") %}
+      <div class="mt-md" style="border-top:1px solid var(--color-border);padding-top:var(--space-sm)">
+        <p class="status-badge status-low">{{ r.unmatched|length }} unmatched item(s) — no matching part found</p>
+        <ul class="text-sm mt-sm">
+          {% for u in r.unmatched %}
+          <li style="color:var(--color-muted)">{{ u.raw_name }} (x{{ u.quantity }})</li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+    {% elif r.status == "tech_pending" %}
+      <div style="display:flex;align-items:center;gap:var(--space-md)">
+        <span class="status-badge status-warn" style="font-size:var(--text-base)">Tech Confirmation Needed</span>
+        <span class="text-sm">Technician "{{ r.get("tech_name", "") }}" did not match exactly. The invoice was queued under <a href="/dashboard/unmatched">Unmatched → Tech Confirmation</a>. Select the correct tech there — nothing was deducted yet.</span>
+      </div>
+    {% elif r.status == "unmatched_package" %}
+      <div style="display:flex;align-items:center;gap:var(--space-md)">
+        <span class="status-badge status-low" style="font-size:var(--text-base)">Unmatched Package</span>
+        <span class="text-sm">Package "{{ r.get("description", "") }}" not found — it was saved as an Unmatched Package. <a href="/dashboard/unmatched">Create it there</a> (add its parts in Packages), then assign the invoice. No need to re-upload.</span>
+      </div>
+    {% elif r.status == "skipped" %}
+      <div style="display:flex;align-items:center;gap:var(--space-md)">
+        <span class="status-badge status-low" style="font-size:var(--text-base)">Skipped</span>
+        <span class="text-sm">{{ r.get("reason", "") }}</span>
+      </div>
+    {% elif r.status == "error" %}
+      <div style="display:flex;align-items:center;gap:var(--space-md)">
+        <span class="status-badge status-low" style="font-size:var(--text-base)">Error</span>
+        <span class="text-sm">
+          {% set reason = r.get("reason", r.get("error", "")) %}
+          {% if reason == "no_technician_name" %}
+            No technician signature found in PDF. Cannot assign invoice to a technician.
+          {% elif reason == "unknown_tech" %}
+            Technician "{{ r.get("tech_name", "") }}" not found in system. Please add them first or check the name.
+          {% elif reason == "unknown_format" %}
+            Invoice format not recognized. Manual review required.
+          {% elif reason == "no_pdf" %}
+            No PDF attachment found in the email.
+          {% elif reason == "no_description" %}
+            Package description is empty. Cannot expand to parts.
+          {% elif reason == "unmatched_package" %}
+            Package description "{{ r.get("description", "") }}" not found. Create it in Packages tab.
+          {% else %}
+            {{ reason }}
+          {% endif %}
+        </span>
+      </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

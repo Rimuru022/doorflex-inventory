@@ -1,0 +1,152 @@
+{% extends "owner_base.html" %}
+{% block title %}Events{% endblock %}
+{% block content %}
+
+<style>
+.section {
+  background: #fff;
+  border: 1px solid #e6dfd2;
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin-bottom: 18px;
+}
+.section h2 { margin: 0 0 12px; font-size: 15px; color: #9a5a1f; text-transform: uppercase; letter-spacing: 0.04em; }
+.filter-form { display: flex; gap: 8px; flex-wrap: wrap; align-items: end; margin-bottom: 14px; }
+.filter-form label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: #555; display: block; }
+.filter-form select, .filter-form input {
+  padding: 5px 8px; font-size: 13px; border: 1px solid #d8c9a8; border-radius: 5px; background: #fcf9f2;
+}
+.filter-form button {
+  padding: 6px 12px; background: #9a5a1f; color: #fff; border: 0; border-radius: 5px; font-weight: 600; cursor: pointer;
+}
+.filter-form button.secondary { background: #6c6452; }
+.filter-form a { font-size: 12px; color: #007185; text-decoration: none; }
+.tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+.tbl th { text-align: left; background: #f3efe7; padding: 6px 10px; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.04em; color: #555; }
+.tbl td { padding: 5px 10px; border-bottom: 1px solid #eee6d8; vertical-align: top; }
+.tbl tr.is-error td { background: #fdf2ef; }
+.tbl tr.is-warn td { background: #fef9e7; }
+.lvl { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10.5px; font-weight: 700; }
+.lvl-info { background: #e7f3ef; color: #1e6b54; }
+.lvl-warn { background: #fbe5c4; color: #8a5d00; }
+.lvl-error { background: #f6cfca; color: #8b1a13; }
+.scope-tag { font-size: 10.5px; color: #777; background: #f1ecdf; padding: 1px 6px; border-radius: 3px; }
+.tz-line { display: flex; flex-direction: column; font-size: 11px; line-height: 1.35; }
+.tz-line .az { font-weight: 600; }
+.tz-line .cmx { color: #9a5a1f; }
+.detail-pre { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10.5px; white-space: pre-wrap; word-break: break-word; background: #faf6ed; padding: 4px 6px; border-radius: 4px; max-width: 380px; max-height: 140px; overflow: auto; }
+.summary { font-size: 12px; color: #666; margin-bottom: 8px; }
+.pager { margin-top: 12px; display: flex; gap: 12px; align-items: center; font-size: 12px; }
+.pager a { color: #007185; text-decoration: none; font-weight: 600; }
+</style>
+
+<div style="margin-bottom: 16px;">
+  <h1 style="margin:0 0 4px;font-size:20px;">Events</h1>
+  <div style="color:#888;font-size:12px;">
+    <a href="{{ admin_path }}/observe">← Dashboard</a>
+    · every event from ingest, PWA, email, cron and system, with AZ + CDMX timestamps.
+  </div>
+</div>
+
+<div class="section">
+  <h2>Filters</h2>
+  <form method="get" class="filter-form">
+    <div>
+      <label>Scope</label>
+      <select name="scope">
+        <option value="">— any —</option>
+        {% for s in scope_options %}
+          <option value="{{ s }}" {% if filters.scope == s %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>Level</label>
+      <select name="level">
+        <option value="">— any —</option>
+        <option value="info" {% if filters.level == 'info' %}selected{% endif %}>info</option>
+        <option value="warn" {% if filters.level == 'warn' %}selected{% endif %}>warn</option>
+        <option value="error" {% if filters.level == 'error' %}selected{% endif %}>error</option>
+      </select>
+    </div>
+    <div>
+      <label>Event type</label>
+      <select name="event_type">
+        <option value="">— any —</option>
+        {% for t in type_options %}
+          <option value="{{ t }}" {% if filters.event_type == t %}selected{% endif %}>{{ t }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>From (AZ, YYYY-MM-DD HH:MM:SS)</label>
+      <input type="text" name="date_from" value="{{ filters.date_from }}" placeholder="2026-08-01 00:00:00">
+    </div>
+    <div>
+      <label>To</label>
+      <input type="text" name="date_to" value="{{ filters.date_to }}" placeholder="2026-08-31 23:59:59">
+    </div>
+    <div>
+      <label>Search</label>
+      <input type="text" name="search" value="{{ filters.search }}" placeholder="batch, invoice, etc.">
+    </div>
+    <div>
+      <button type="submit">Filter</button>
+    </div>
+    <div>
+      <a href="{{ admin_path }}/observe/events">Clear</a>
+    </div>
+  </form>
+</div>
+
+<div class="section">
+  <h2>{{ total }} event{{ '' if total == 1 else 's' }}</h2>
+  {% if events %}
+  <table class="tbl">
+    <thead>
+      <tr>
+        <th style="width:20%">When (AZ / CDMX)</th>
+        <th style="width:60px">Level</th>
+        <th style="width:80px">Scope</th>
+        <th>Event</th>
+        <th>Message</th>
+        <th>Ref</th>
+        <th>Detail</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for e in events %}
+      <tr class="{{ 'is-error' if e.level == 'error' else ('is-warn' if e.level == 'warn' else '') }}">
+        <td>
+          <div class="tz-line">
+            <span class="az">{{ e.ts|dualtz_date }} {{ e.ts|dualtz_az }} AZ</span>
+            <span class="cmx">{{ e.ts|dualtz_cmx }} CDMX</span>
+          </div>
+        </td>
+        <td><span class="lvl lvl-{{ e.level }}">{{ e.level }}</span></td>
+        <td><span class="scope-tag">{{ e.scope or '—' }}</span></td>
+        <td><code style="font-size:11px;">{{ e.event_type }}</code></td>
+        <td>{{ e.message }}</td>
+        <td><code style="font-size:10.5px;">{{ e.ref or '' }}</code></td>
+        <td>
+          {% if e.detail %}
+            <pre class="detail-pre">{{ e.detail }}</pre>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if total > limit %}
+  <div class="pager">
+    {% if offset > 0 %}<a href="?{{ 'scope=' + filters.scope + '&' if filters.scope else '' }}{{ 'level=' + filters.level + '&' if filters.level else '' }}{{ 'event_type=' + filters.event_type + '&' if filters.event_type else '' }}{{ 'date_from=' + filters.date_from + '&' if filters.date_from else '' }}{{ 'date_to=' + filters.date_to + '&' if filters.date_to else '' }}{{ 'search=' + filters.search + '&' if filters.search else '' }}offset={{ offset - limit }}&limit={{ limit }}">← Previous</a>{% endif %}
+    <span>Showing {{ offset + 1 }}–{{ [offset + limit, total]|min }} of {{ total }}</span>
+    {% if offset + limit < total %}<a href="?{{ 'scope=' + filters.scope + '&' if filters.scope else '' }}{{ 'level=' + filters.level + '&' if filters.level else '' }}{{ 'event_type=' + filters.event_type + '&' if filters.event_type else '' }}{{ 'date_from=' + filters.date_from + '&' if filters.date_from else '' }}{{ 'date_to=' + filters.date_to + '&' if filters.date_to else '' }}{{ 'search=' + filters.search + '&' if filters.search else '' }}offset={{ offset + limit }}&limit={{ limit }}">Next →</a>{% endif %}
+  </div>
+  {% endif %}
+  {% else %}
+  <div style="color:#888;font-style:italic;font-size:13px;">No events match these filters.</div>
+  {% endif %}
+</div>
+
+{% endblock %}

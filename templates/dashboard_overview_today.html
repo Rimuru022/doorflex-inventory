@@ -1,0 +1,51 @@
+{% extends "dashboard_base.html" %}
+{% block title %}Overview{% endblock %}
+{% set active_page = "overview_today" %}
+{% block content %}
+<div class="section">
+  <div class="section-header"><h2>Today's Overview <span class="count">{{ date }}</span></h2></div>
+  <form method="get" action="/dashboard/overview-today" class="flex gap-sm" style="margin-bottom:var(--space-md)">
+    <input type="date" name="date" value="{{ date }}" onchange="this.form.submit()">
+  </form>
+</div>
+
+<div class="section">
+  <div class="section-header"><h2>✅ Captured <span class="count">{{ result.matched|length }}</span></h2></div>
+  {% if result.matched %}
+  <table>
+    <thead><tr><th>WO#</th><th>Address</th><th>Tech</th></tr></thead>
+    <tbody>{% for j in result.matched %}<tr><td>{{ j.wo_number }}</td><td class="text-sm">{{ j.address }}</td><td>{{ j.tech_name or '—' }}</td></tr>{% endfor %}</tbody>
+  </table>
+  {% else %}<p class="text-muted">None yet.</p>{% endif %}
+</div>
+
+<div class="section">
+  <div class="section-header"><h2>⚠️ Not Collected <span class="count">{{ result.not_collected|length }}</span></h2></div>
+  {% if result.not_collected %}
+  <table>
+    <thead><tr><th>WO#</th><th>Address</th><th>Tech</th></tr></thead>
+    <tbody>{% for j in result.not_collected %}<tr><td>{{ j.wo_number }}</td><td class="text-sm">{{ j.address }}</td><td>{{ j.tech_name or '—' }}</td></tr>{% endfor %}</tbody>
+  </table>
+  {% else %}<p class="text-muted">None.</p>{% endif %}
+</div>
+
+<div class="section">
+  <div class="section-header"><h2>❌ Not Captured <span class="count">{{ result.uncaptured|length }}</span></h2></div>
+  {% if result.uncaptured %}
+  <table>
+    <thead><tr><th>WO#</th><th>Address</th><th>Tech</th></tr></thead>
+    <tbody>{% for j in result.uncaptured %}<tr><td>{{ j.wo_number }}</td><td class="text-sm">{{ j.address or '(no address)' }}</td><td>{{ j.tech_name or '—' }}</td></tr>{% endfor %}</tbody>
+  </table>
+  {% else %}<p class="text-muted">None — every job was closed in the PWA.</p>{% endif %}
+</div>
+
+<div class="section">
+  <div class="section-header"><h2>🚨 Removed by Dispatch <span class="count">{{ result.removed|length }}</span></h2></div>
+  {% if result.removed %}
+  <table>
+    <thead><tr><th>WO#</th><th>Address</th><th>Tech</th><th></th></tr></thead>
+    <tbody>{% for j in result.removed %}<tr><td>{{ j.wo_number }}</td><td class="text-sm">{{ j.address }}</td><td>{{ j.tech_name or '—' }}</td><td><a href="/dashboard/disputes" class="btn btn-secondary btn-sm">View dispute</a></td></tr>{% endfor %}</tbody>
+  </table>
+  {% else %}<p class="text-muted">None.</p>{% endif %}
+</div>
+{% endblock %}

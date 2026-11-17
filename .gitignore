@@ -1,0 +1,52 @@
+# ─── Python ────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+dist/
+build/
+wheels/
+*.whl
+*.egg
+cookie.*
+# ─── Virtual environment ────────────────────────────────────────────────
+.venv/
+venv/
+env/
+.Python
+AGENTS.md
+.opencode/
+
+# ─── Environment ─────────────────────────────────────────────────────
+# Local credentials (not needed in production, Coolify uses its own env vars)
+.env
+
+# ─── Database ──────────────────────────────────────────────────────────
+data/
+!data/.gitkeep
+# backups live inside data/ (never commit customer snapshots)
+backups/
+
+# ─── IDE / Editors ────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ─── Project specific ─────────────────────────────────────────────────
+# Invoice PDFs (sample/test files, not needed in production)
+*.pdf
+output extractor.txt   
+graphify-out/*
+test_webhook.py
+DoorFlex_Inventory_Demo.csv
+
+# ─── Real client data (never commit — DoorFlex property) ─────────────────
+# F1-F4 from Nick (WhatsApp). Only used for manual imports/SKU proposal.
+Service_Spring Excel.xlsx
+Winston PDF.pdf
+DoorFlex_Inventory_v1.xlsx
+DoorFlex_Inventory_v1.csv

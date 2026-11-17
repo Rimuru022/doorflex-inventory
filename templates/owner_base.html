@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" type="image/png" href="https://images.squarespace-cdn.com/content/v1/697927f21da39d20b8c643e3/982c2a3b-e83e-47fa-b327-88a997fb6c65/38F18C26-0AA4-4042-9B66-5B19ED19078A.PNG?format=100w">
+<title>DoorFlex Owner - {% block title %}Panel{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+{% include "partials/styles.html" %}
+</head>
+<body>
+{% if owner_authenticated %}
+<nav class="navbar">
+  <div style="display:flex;align-items:center;gap:0.75rem">
+    <span style="font-weight:800;font-size:1.15rem;letter-spacing:0.06em;color:#fff;text-transform:uppercase">DOORFLEX</span>
+    <span style="font-weight:400;font-size:0.8125rem;color:oklch(0.65 0.01 50);letter-spacing:0.02em">Owner Panel</span>
+  </div>
+  <ul class="navbar-links">
+    <li><a href="{{ admin_path }}/observe" class="{% if active_page == 'observe' %}active{% endif %}">Observar</a></li>
+    <li><a href="{{ admin_path }}/dev" class="{% if active_page == 'dev' %}active{% endif %}">Dev Tools</a></li>
+    <li><a href="{{ admin_path }}/backups" class="{% if active_page == 'backups' %}active{% endif %}">Backups</a></li>
+    <li><a href="{{ admin_path }}/reports" class="{% if active_page == 'reports' %}active{% endif %}">Reports</a></li>
+    <li><a href="{{ admin_path }}/pwa" class="{% if active_page == 'pwa' %}active{% endif %}">PWA Tokens</a></li>
+    <li><a href="{{ admin_path }}/qbo" class="{% if active_page == 'qbo' %}active{% endif %}">QuickBooks</a></li>
+    <li><a href="/dashboard" style="color:oklch(0.65 0.01 50)">Staff Dashboard</a></li>
+    <li><a href="{{ admin_path }}/logout" style="color:oklch(0.8 0.09 30)">Logout</a></li>
+  </ul>
+</nav>
+{% endif %}
+<main class="main">
+{% if flash %}
+<div class="flash flash-{{ flash.kind }}">
+{% if flash.kind == 'error' %}<strong>⚠️ Error</strong>{% elif flash.kind == 'warning' %}<strong>⚠️ Warning</strong>{% endif %}
+{{ flash.msg }}
+</div>
+{% endif %}
+{% block content %}{% endblock %}
+</main>
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,39 @@
+{% extends "owner_base.html" %}
+{% block title %}PWA Tech Tokens{% endblock %}
+{% set active_page = "pwa" %}
+{% block content %}
+<div class="section">
+  <div class="section-header"><h2>PWA Tech Tokens</h2></div>
+  <p class="text-sm text-muted" style="margin-bottom:var(--space-md)">
+    Cada tech puede tener un token para la PWA del teléfono. El link de
+    instalación es <code>/tech/pwa/?t=&lt;token&gt;</code>. Solo se almacena el
+    hash del token (nunca el valor en claro). Regenerar revoca el anterior.
+  </p>
+  <table>
+    <thead><tr><th>Tech</th><th>Truck</th><th>Deduction Source</th><th>Active</th><th>Token</th><th>Actions</th></tr></thead>
+    <tbody>
+      {% for t in techs %}
+      <tr>
+        <td style="font-weight:600">{{ t.name }}</td>
+        <td class="text-sm">{{ t.truck_id }}{% if t.truck_name %} · {{ t.truck_name }}{% endif %}</td>
+        <td class="text-sm">{{ t.deduction_source }}</td>
+        <td class="text-sm">{{ "Yes" if t.active else "No" }}</td>
+        <td class="text-sm">{{ "Set" if t.pwa_token_hash else "—" }}</td>
+        <td>
+          <form method="post" action="{{ admin_path }}/pwa/rotate" class="inline-form" style="display:inline">
+            <input type="hidden" name="tech_id" value="{{ t.id }}">
+            <button type="submit" class="btn btn-primary btn-sm">Rotate token</button>
+          </form>
+          {% if t.pwa_token_hash %}
+          <form method="post" action="{{ admin_path }}/pwa/clear" class="inline-form" style="display:inline">
+            <input type="hidden" name="tech_id" value="{{ t.id }}">
+            <button type="submit" class="btn btn-sm" style="background:oklch(0.7 0.12 25)">Clear</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

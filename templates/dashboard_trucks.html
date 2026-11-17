@@ -1,0 +1,57 @@
+{% extends "dashboard_base.html" %}
+{% block title %}Trucks{% endblock %}
+{% set active_page = "trucks" %}
+{% block content %}
+<div class="section">
+  <div class="section-header"><h2>Trucks <span class="count">{{ trucks|length }}</span></h2></div>
+  <div class="search-field"><input type="text" id="truck_search" placeholder="Search trucks..." oninput="filterTable('truck_search', 'truck_table')"></div>
+  <table id="truck_table">
+    <thead><tr><th>ID</th><th>Name</th><th>Warehouse</th><th style="width:320px"></th></tr></thead>
+    <tbody>
+      {% for t in trucks %}
+      <tr>
+        <td>{{ t.id }}</td>
+        <td>{{ t.name }} — {{ t.warehouse_name }}</td>
+        <td>{{ t.warehouse_name }}</td>
+        <td>
+          <div style="display:flex;gap:0.75rem;align-items:center">
+            <a href="/dashboard/audit/truck/{{ t.id }}" target="_blank" class="btn btn-secondary btn-sm" style="padding:0.3rem 0.7rem;min-width:3.5rem;text-align:center;border:1px solid var(--color-border)">Print Restock List</a>
+            <details>
+              <summary class="btn btn-secondary btn-sm" style="cursor:pointer;list-style:none;padding:0.3rem 0.7rem;min-width:3.5rem;text-align:center;border:1px solid var(--color-border)">Edit</summary>
+              <form method="post" action="/dashboard/trucks/update" class="flex gap-sm mt-sm" style="flex-wrap:wrap">
+                <input type="hidden" name="truck_id" value="{{ t.id }}">
+                <input type="text" name="name" value="{{ t.name }}" style="width:120px">
+                <select name="warehouse_id" style="width:140px">
+                  <option value="">— Warehouse —</option>
+                  {% for w in warehouses %}<option value="{{ w.id }}" {% if w.id == t.warehouse_id %}selected{% endif %}>{{ w.name }}</option>{% endfor %}
+                </select>
+                <button type="submit" class="btn btn-primary btn-sm">Save</button>
+              </form>
+            </details>
+            <form method="post" action="/dashboard/trucks/deactivate" onsubmit="return confirm('Deactivate {{ t.id }}?')">
+              <input type="hidden" name="truck_id" value="{{ t.id }}">
+              <button type="submit" class="btn btn-danger btn-sm" style="padding:0.3rem 0.7rem;min-width:3.5rem;text-align:center;border:1px solid oklch(0.55 0.18 30 / 0.3)">Delete</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<div class="two-col">
+  <div class="form-card">
+    <h3>Create Truck</h3>
+    <form method="post" action="/dashboard/trucks/create">
+      <label>ID</label><input type="text" name="id" placeholder="T-03" required>
+      <label class="mt-sm">Name</label><input type="text" name="name" required>
+      <label class="mt-sm">Warehouse</label>
+      <select name="warehouse_id">
+        <option value="">— Select warehouse —</option>
+        {% for w in warehouses %}<option value="{{ w.id }}">{{ w.name }}</option>{% endfor %}
+      </select>
+      <button type="submit" class="btn btn-primary mt-md">Create Truck</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

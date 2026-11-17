@@ -1,0 +1,149 @@
+{% extends "owner_base.html" %}
+{% block title %}Requests{% endblock %}
+{% block content %}
+
+<style>
+.section {
+  background: #fff;
+  border: 1px solid #e6dfd2;
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin-bottom: 18px;
+}
+.section h2 { margin: 0 0 12px; font-size: 15px; color: #9a5a1f; text-transform: uppercase; letter-spacing: 0.04em; }
+.filter-form { display: flex; gap: 8px; flex-wrap: wrap; align-items: end; margin-bottom: 14px; }
+.filter-form label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: #555; display: block; }
+.filter-form select, .filter-form input {
+  padding: 5px 8px; font-size: 13px; border: 1px solid #d8c9a8; border-radius: 5px; background: #fcf9f2;
+}
+.filter-form button {
+  padding: 6px 12px; background: #9a5a1f; color: #fff; border: 0; border-radius: 5px; font-weight: 600; cursor: pointer;
+}
+.filter-form a { font-size: 12px; color: #007185; text-decoration: none; }
+.tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+.tbl th { text-align: left; background: #f3efe7; padding: 6px 10px; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.04em; color: #555; }
+.tbl td { padding: 5px 10px; border-bottom: 1px solid #eee6d8; vertical-align: top; }
+.tbl tr.is-error td { background: #fdf2ef; }
+.tbl tr.is-warn td { background: #fef9e7; }
+.status {
+  display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 11px; font-weight: 700;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.status-2xx { background: #e7f3ef; color: #1e6b54; }
+.status-3xx { background: #f0eedf; color: #5d5b48; }
+.status-4xx { background: #fbe5c4; color: #8a5d00; }
+.status-5xx { background: #f6cfca; color: #8b1a13; }
+.tz-line { display: flex; flex-direction: column; font-size: 11px; line-height: 1.35; }
+.tz-line .az { font-weight: 600; }
+.tz-line .cmx { color: #9a5a1f; }
+.summary { font-size: 12px; color: #666; margin-bottom: 8px; }
+.pager { margin-top: 12px; display: flex; gap: 12px; align-items: center; font-size: 12px; }
+.pager a { color: #007185; text-decoration: none; font-weight: 600; }
+.path-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; color: #1a1a1a; }
+.method { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; font-weight: 700; }
+.method-GET { color: #1e6b54; }
+.method-POST { color: #007185; }
+.method-PUT, .method-PATCH, .method-DELETE { color: #8b1a13; }
+</style>
+
+<div style="margin-bottom: 16px;">
+  <h1 style="margin:0 0 4px;font-size:20px;">Requests</h1>
+  <div style="color:#888;font-size:12px;">
+    <a href="{{ admin_path }}/observe">← Dashboard</a>
+    · every <code>/tech/*</code> and <code>/api/*</code> request + any 4xx/5xx anywhere.
+    AZ + CDMX timestamps.
+  </div>
+</div>
+
+<div class="section">
+  <h2>Filters</h2>
+  <form method="get" class="filter-form">
+    <div>
+      <label>Path prefix</label>
+      <input type="text" name="path_prefix" value="{{ filters.path_prefix }}" placeholder="/tech or /api">
+    </div>
+    <div>
+      <label>Method</label>
+      <select name="method">
+        <option value="">— any —</option>
+        {% for m in ('GET', 'POST', 'PUT', 'PATCH', 'DELETE') %}
+          <option value="{{ m }}" {% if filters.method == m %}selected{% endif %}>{{ m }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>Status</label>
+      <select name="status">
+        <option value="">— any —</option>
+        <option value="200" {% if filters.status == '200' %}selected{% endif %}>200 OK</option>
+        <option value="302" {% if filters.status == '302' %}selected{% endif %}>302 redirect</option>
+        <option value="400" {% if filters.status == '400' %}selected{% endif %}>400 bad req</option>
+        <option value="401" {% if filters.status == '401' %}selected{% endif %}>401 unauth</option>
+        <option value="403" {% if filters.status == '403' %}selected{% endif %}>403 forbidden</option>
+        <option value="404" {% if filters.status == '404' %}selected{% endif %}>404 not found</option>
+        <option value="422" {% if filters.status == '422' %}selected{% endif %}>422 unproc</option>
+        <option value="500" {% if filters.status == '500' %}selected{% endif %}>500 error</option>
+      </select>
+    </div>
+    <div>
+      <label>From</label>
+      <input type="text" name="date_from" value="{{ filters.date_from }}" placeholder="2026-08-01 00:00:00">
+    </div>
+    <div>
+      <label>To</label>
+      <input type="text" name="date_to" value="{{ filters.date_to }}" placeholder="2026-08-31 23:59:59">
+    </div>
+    <div><button type="submit">Filter</button></div>
+    <div><a href="{{ admin_path }}/observe/requests">Clear</a></div>
+  </form>
+</div>
+
+<div class="section">
+  <h2>{{ total }} request{{ '' if total == 1 else 's' }}</h2>
+  {% if rows %}
+  <table class="tbl">
+    <thead>
+      <tr>
+        <th style="width:20%">When (AZ / CDMX)</th>
+        <th style="width:60px">Method</th>
+        <th style="width:60px">Status</th>
+        <th>Path</th>
+        <th style="width:120px">Tech (token)</th>
+        <th style="width:90px">Duration</th>
+        <th style="width:120px">IP</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      {% set cls = '' %}
+      {% if r.status >= 500 %}{% set cls = 'is-error' %}{% elif r.status >= 400 %}{% set cls = 'is-warn' %}{% endif %}
+      <tr class="{{ cls }}">
+        <td>
+          <div class="tz-line">
+            <span class="az">{{ r.ts|dualtz_date }} {{ r.ts|dualtz_az }} AZ</span>
+            <span class="cmx">{{ r.ts|dualtz_cmx }} CDMX</span>
+          </div>
+        </td>
+        <td><span class="method method-{{ r.method }}">{{ r.method }}</span></td>
+        <td>{% set status_class = r.status|string %}<span class="status status-{{ status_class[0] }}xx">{{ r.status }}</span></td>
+        <td class="path-code">{{ r.path }}{% if r.detail %} <span style="color:#888;font-size:10.5px;">· {{ r.detail }}</span>{% endif %}</td>
+        <td>{{ r.tech or '—' }}</td>
+        <td>{{ r.duration_ms }} ms</td>
+        <td><code style="font-size:11px;">{{ r.ip or '—' }}</code></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if total > limit %}
+  <div class="pager">
+    {% if offset > 0 %}<a href="?path_prefix={{ filters.path_prefix }}&method={{ filters.method }}&status={{ filters.status }}&date_from={{ filters.date_from }}&date_to={{ filters.date_to }}&offset={{ offset - limit }}&limit={{ limit }}">← Previous</a>{% endif %}
+    <span>Showing {{ offset + 1 }}–{{ [offset + limit, total]|min }} of {{ total }}</span>
+    {% if offset + limit < total %}<a href="?path_prefix={{ filters.path_prefix }}&method={{ filters.method }}&status={{ filters.status }}&date_from={{ filters.date_from }}&date_to={{ filters.date_to }}&offset={{ offset + limit }}&limit={{ limit }}">Next →</a>{% endif %}
+  </div>
+  {% endif %}
+  {% else %}
+  <div style="color:#888;font-style:italic;font-size:13px;">No requests logged yet. Catalog fetches show up here (every 2 min while the PWA is open); syncs too.</div>
+  {% endif %}
+</div>
+
+{% endblock %}

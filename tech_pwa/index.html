@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="DoorFlex">
+  <link rel="manifest" href="./manifest.json?v=31">
+  <link rel="icon" type="image/x-icon" href="./favicon.ico?v=21">
+  <link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32.png?v=21">
+  <link rel="icon" type="image/png" sizes="16x16" href="./icons/favicon-16.png?v=21">
+  <link rel="apple-touch-icon" href="./icons/icon-180.png?v=21">
+  <link rel="stylesheet" href="./app.css?v=31">
+  <title>DoorFlex Tech</title>
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <h1>DoorFlex <span style="color:var(--accent)">Parts</span></h1>
+      <div class="sub" id="sub">Loading catalog…</div>
+      <div class="search">
+        <input type="search" id="q" placeholder="Search part, SKU…" autocomplete="off" enterkeyhint="search">
+        <button class="btn sync-btn" id="syncbtn" title="Sync now" onclick="syncNow()">↻</button>
+      </div>
+    </header>
+    <div class="install-hint" id="installhint" hidden>
+      <span>Install this app for reliable offline use on iPhone/iPad: tap Share → Add to Home Screen.</span>
+      <button type="button" class="install-hint-close" onclick="dismissInstallHint()" aria-label="Dismiss">✕</button>
+    </div>
+    <div class="active-wo-banner" id="activewobanner" hidden></div>
+    <main class="grid" id="grid"></main>
+    <button class="fab fab-jobs" id="jobsfab" title="My Jobs" aria-label="My Jobs" onclick="openMyJobs()">📋 <span>My Jobs</span></button>
+    <button class="fab" id="doorfab" title="Door Order" aria-label="Door Order" onclick="openDoorWizard()">🚪 <span>Door Order</span></button>
+  </div>
+
+  <div class="detail-overlay" id="detail" hidden></div>
+  <div class="detail-overlay wiz" id="doorwiz" hidden></div>
+  <div class="detail-overlay wiz" id="myjobs" hidden></div>
+  <div class="detail-overlay wiz" id="jobdetail" hidden></div>
+  <div class="detail-overlay wiz" id="wopicker" hidden></div>
+  <div class="pending-badge" id="pending" hidden></div>
+  <div class="door-pending-badge" id="doorpending" hidden></div>
+  <div class="job-pending-badge" id="jobpending" hidden></div>
+  <div class="sync-indicator" id="sync"></div>
+
+  <script src="./app.js?v=31"></script>
+</body>
+</html>

@@ -1,0 +1,57 @@
+{% extends "owner_base.html" %}
+{% block title %}Backups{% endblock %}
+{% set active_page = "backups" %}
+{% block content %}
+<div class="section">
+  <div class="section-header">
+    <h2>Backups</h2>
+    <form method="post" action="{{ admin_path }}/backups/create" style="margin:0">
+      <button type="submit" class="btn btn-primary">Backup Now</button>
+    </form>
+  </div>
+  <p class="text-sm text-muted" style="margin-bottom:var(--space-md)">
+    Each backup is a full snapshot — the database <strong>and</strong> the on-disk files it only stores paths to (job-capture receipt photos, Winston report images). An automatic snapshot is created on every server start (before migrations) and daily at midnight Arizona time. The last 13 are kept. Download a backup before making risky changes.
+  </p>
+  {% if backups %}
+  <table>
+    <thead><tr><th>File</th><th>Contents</th><th>Size</th><th>Created (AZ)</th><th></th></tr></thead>
+    <tbody>
+      {% for b in backups %}
+      <tr>
+        <td>{{ b.name }}</td>
+        <td>
+          {% if b.kind == 'full' %}<span class="status-badge status-ok">Full (DB + photos)</span>
+          {% else %}<span class="status-badge">Database only</span>{% endif %}
+        </td>
+        <td>{{ "{:,}".format(b.size) }} bytes</td>
+        <td class="text-muted">{{ b.mtime }}</td>
+        <td class="flex gap-sm">
+          <a href="{{ admin_path }}/backups/download?file={{ b.name }}" class="btn btn-secondary btn-sm">Download</a>
+          <form method="post" action="{{ admin_path }}/backups/delete" style="margin:0" onsubmit="return confirm('Delete backup {{ b.name }}? This cannot be undone.')">
+            <input type="hidden" name="file" value="{{ b.name }}">
+            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="text-muted">No backups yet. Click "Backup Now" or restart the server to create one.</p>
+  {% endif %}
+</div>
+
+<div class="section">
+  <div class="section-header"><h2>Restore from Backup</h2></div>
+  <div class="form-card" style="max-width:600px">
+    <p class="text-sm text-muted" style="margin-bottom:var(--space-md)">
+      Upload a <code>.zip</code> full backup (from this page, or another DoorFlex instance) to restore the database <strong>and</strong> the photo files together — the way to recover everything after a data disaster. A plain <code>.db</code> file is also accepted for older, database-only backups, but won't bring photos back. The current state is backed up first before anything is replaced.
+    </p>
+    <form method="post" action="{{ admin_path }}/backups/restore" enctype="multipart/form-data" onsubmit="return confirm('Restore from this file? Current data is backed up first, but all current data will be replaced.')">
+      <label>Backup file (.zip or .db)</label>
+      <input type="file" name="file" accept=".zip,.db" required>
+      <button type="submit" class="btn btn-danger mt-md">Restore</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,29 @@
+name = "doorflex-invoice-ingest"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+
+# Emails que disparan este worker
+[triggers]
+email = ["doorflexinvoices@otomatelabs.com"]
+
+# Variables de entorno (también se pueden setear en el dashboard)
+[vars]
+BACKEND_URL = "https://dooflexinventory.otomatelabs.com"
+WEBHOOK_SECRET = "REPLACE-WITH-SAME-SECRET-AS-BACKEND"
+BACKUP_EMAIL = ""
+
+# Observabilidad: logs y traces (ver Workers > doorflex-invoice-ingest > Logs)
+[observability]
+enabled = true
+head_sampling_rate = 1
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+persist = true
+invocation_logs = true
+
+[observability.traces]
+enabled = true
+persist = true
+head_sampling_rate = 1

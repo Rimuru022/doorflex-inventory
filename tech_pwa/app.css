@@ -1,0 +1,822 @@
+:root {
+  --bg: #0f172a;
+  --card: #1e293b;
+  --card-2: #243348;
+  --surface: #243348;
+  --surface-2: #2f4157;
+  --border: #334155;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --accent: #22d3ee;
+  --ok: #34d399;
+  --warn: #fbbf24;
+  --danger: #f87171;
+  --radius: 16px;
+  --space: 12px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* overflow:hidden here is load-bearing, paired with .app's height:100dvh
+ * (not min-height) below: without both, the whole *document* can grow past
+ * the viewport and become its own scroller once .grid's content is tall —
+ * at which point .grid's own overflow-y:auto is bypassed, and scrolling
+ * the page also drags the (visually covered) grid behind any fixed overlay
+ * along with it. This forces #grid to be the only real scroll container. */
+html, body { height: 100%; overflow: hidden; }
+
+/* Eliminate the ~300ms iOS Safari tap delay (double-tap zoom wait) so
+ * tapping a card opens the detail instantly. */
+html { touch-action: manipulation; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app {
+  max-width: 640px;
+  margin: 0 auto;
+  height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--bg);
+  padding: calc(env(safe-area-inset-top, 0px) + 12px) var(--space) 8px;
+}
+
+.header h1 {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.header .sub { color: var(--muted); font-size: 13px; }
+
+.search {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+}
+
+.search input {
+  flex: 1;
+  border: none;
+  background: var(--card);
+  color: var(--text);
+  font-size: 18px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  outline: none;
+}
+.search input::placeholder { color: var(--muted); }
+
+.install-hint {
+  margin: 10px var(--space) 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.install-hint span { flex: 1; }
+.install-hint-close {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  /* 4px padding alone gave a ~24px hit target, well under Apple's 44px
+   * minimum — taps near the edge were landing on the banner behind it
+   * instead of the button, which read as "the X doesn't clear it". */
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn {
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  padding: 12px 16px;
+  cursor: pointer;
+  color: var(--text);
+  background: var(--card);
+}
+.btn:active { transform: scale(0.97); }
+
+.sync-btn {
+  flex: 0 0 auto;
+  width: 48px;
+  padding: 0;
+  font-size: 22px;
+  background: var(--card-2);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.sync-indicator {
+  position: fixed;
+  /* Extra clearance below the title: the status line under it (id="sub")
+   * is normally one short line, but a couple of real messages (storage
+   * unavailable, revoked link) run long enough to wrap to two lines on a
+   * narrow phone — at the old 46px this toast sat on top of that second
+   * line instead of below it. */
+  top: calc(env(safe-area-inset-top, 0px) + 84px);
+  right: 12px;
+  background: var(--card-2);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 13px;
+  color: var(--muted);
+  z-index: 20;
+  display: none;
+  max-width: min(320px, calc(100vw - 24px));
+  text-align: right;
+}
+.sync-indicator.show { display: block; }
+.sync-indicator.ok { color: var(--ok); }
+.sync-indicator.err { color: var(--danger); }
+
+.grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space);
+  padding: var(--space);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: border-color 0.1s;
+  position: relative;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+.card:active { border-color: var(--accent); }
+
+.card .placeholder {
+  height: 72px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--card-2), #2c3a52);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 34px;
+  font-weight: 800;
+  color: rgba(226,232,240,0.35);
+  letter-spacing: 0.02em;
+}
+
+.card .name {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.2;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card .sku { color: var(--muted); font-size: 12px; letter-spacing: 0.03em; }
+
+.badge {
+  display: inline-block;
+  align-self: flex-start;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.badge.ok { background: rgba(52,211,153,0.18); color: var(--ok); }
+.badge.warn { background: rgba(251,191,36,0.18); color: var(--warn); }
+.badge.danger { background: rgba(248,113,113,0.18); color: var(--danger); }
+
+/* Card badge: top-right corner, so it never covers the product placeholder
+ * (initial letter) in the middle of the card. */
+.card .badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1;
+}
+
+.detail {
+  flex: 1;
+  padding: calc(env(safe-area-inset-top, 0px) + 16px) var(--space) calc(env(safe-area-inset-bottom, 0px) + 16px);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: var(--bg);
+}
+
+.detail-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 22;
+  background: var(--bg);
+  flex-direction: column;
+  transform: translateZ(0);
+}
+.detail-overlay:not([hidden]) {
+  display: flex;
+  animation: detail-in 0.18s ease-out;
+}
+.detail-overlay[hidden] {
+  display: none !important;
+}
+
+@keyframes detail-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.pending-badge {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 10px);
+  right: 12px;
+  background: #7c2d12;
+  border: 1px solid rgba(251,191,36,0.4);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--warn);
+  z-index: 21;
+}
+
+.detail .back { align-self: flex-start; }
+
+.detail .big {
+  font-size: 32px;
+  font-weight: 800;
+  text-align: center;
+  line-height: 1.15;
+}
+
+.detail .detail-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.detail .detail-header .big {
+  flex: 1;
+  text-align: left;
+}
+
+.detail .detail-header .back {
+  flex: 0 0 auto;
+  background: var(--surface);
+  color: var(--text);
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.detail .aliases {
+  text-align: left;
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 8px;
+  line-height: 1.35;
+}
+
+.detail .stock-line {
+  text-align: center;
+  color: var(--muted);
+  font-size: 16px;
+}
+
+.stock-line .num { font-size: 28px; font-weight: 800; color: var(--text); }
+
+/* Read-only reminder of which WO this deduction is being tagged to — the WO
+   is chosen once for the whole session, not per part. */
+.wo-tag-row {
+  margin-top: 6px;
+  font-size: 14px;
+  color: var(--muted);
+}
+.wo-tag-row strong { color: var(--text); }
+
+/* Active-WO session banner (sits between the header and the parts grid) */
+.active-wo-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 12px 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--card);
+  border-left: 4px solid var(--accent);
+  font-size: 14px;
+  color: var(--text);
+}
+.active-wo-banner strong { font-weight: 800; }
+.active-wo-banner.none { border-left-color: var(--warn); color: var(--muted); }
+.active-wo-change {
+  flex: none;
+  min-height: 36px;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 10px;
+  background: #1d4ed8;
+  color: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Multiple closing notes */
+.closing-note { position: relative; margin-bottom: 8px; }
+.closing-note textarea { width: 100%; }
+.closing-note-remove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  min-width: 32px;
+  min-height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 15px;
+  cursor: pointer;
+}
+.add-note-btn { width: 100%; margin-top: 2px; font-size: 14px; }
+
+/* Screenshot-review editable fields */
+.screenshot-field-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  margin: 8px 0 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.screenshot-field {
+  width: 100%;
+  border: none;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 15px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  outline: none;
+  font-family: inherit;
+}
+.screenshot-field-row { display: flex; gap: 8px; }
+.screenshot-field-row > .screenshot-field-block { flex: 1; min-width: 0; }
+
+/* Closed-job lock banner */
+.job-locked-banner {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--card);
+  border-left: 4px solid var(--ok);
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.deduct-row {
+  display: flex;
+  gap: 10px;
+  margin-top: auto;
+}
+
+.deduct-row .btn {
+  flex: 1;
+  font-size: 20px;
+  padding: 16px;
+}
+
+.deduct-row .confirm { background: #16a34a; }
+
+.stepper-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 4px;
+}
+
+.stepper-label {
+  font-size: 14px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.stepper {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.stepper .step {
+  background: var(--surface);
+  color: var(--text);
+  border: 0;
+  padding: 10px 18px;
+  font-size: 22px;
+  font-weight: 700;
+  cursor: pointer;
+  min-width: 48px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.stepper .step:active { background: var(--surface-2); }
+
+.stepper .step.disabled,
+.stepper .step[disabled] {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.stepper input[type="number"] {
+  width: 80px;
+  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
+  border: 0;
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  padding: 8px 4px;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.stepper input[type="number"]::-webkit-outer-spin-button,
+.stepper input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.pending-line {
+  text-align: center;
+  font-size: 14px;
+  color: var(--muted);
+  padding: 4px 0 8px;
+}
+
+.pending-line.overshoot {
+  color: var(--warn);
+  font-weight: 600;
+}
+
+.pending-shadow-line {
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+  padding: 0 0 6px;
+  opacity: 0.85;
+}
+
+.empty { text-align: center; color: var(--muted); padding: 40px var(--space); }
+
+/* ─── Door Order FAB + wizard ────────────────────────────────────────────── */
+
+.fab {
+  position: fixed;
+  right: 16px;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+  z-index: 19;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #b45309;
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 14px 20px;
+  font-size: 15px;
+  font-weight: 800;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+  cursor: pointer;
+}
+.fab:active { transform: scale(0.96); }
+
+/* On narrow phones the two full-label FABs (My Jobs / Door Order) can be
+ * wide enough together to overlap in the middle of the screen — collapse to
+ * icon-only pills below this width. `title` already carries the accessible
+ * name. */
+@media (max-width: 420px) {
+  .fab { padding: 14px 16px; gap: 0; }
+  .fab span { display: none; }
+}
+
+.door-pending-badge {
+  position: fixed;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 70px);
+  right: 16px;
+  background: #7c2d12;
+  border: 1px solid rgba(251,191,36,0.4);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--warn);
+  z-index: 19;
+}
+
+.wiz {
+  flex: 1;
+  padding: calc(env(safe-area-inset-top, 0px) + 16px) var(--space) calc(env(safe-area-inset-bottom, 0px) + 16px);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: var(--bg);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.wiz .wiz-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wiz .wiz-title { flex: 1; font-size: 20px; font-weight: 800; }
+
+.wiz .wiz-step-count { font-size: 12px; color: var(--muted); text-align: right; margin-top: -6px; }
+
+.wiz-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.wiz-option {
+  background: var(--card);
+  border: 1px solid transparent;
+  border-radius: 12px;
+  padding: 16px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  min-height: 44px;
+}
+.wiz-option:active { border-color: var(--accent); }
+.wiz-option.selected { border-color: var(--accent); background: var(--card-2); }
+.wiz-option .sub { display: block; font-size: 12px; font-weight: 500; color: var(--muted); margin-top: 2px; }
+
+.wiz-empty { color: var(--muted); text-align: center; padding: 24px 0; }
+
+.wiz input[type="text"], .wiz textarea {
+  width: 100%;
+  border: none;
+  background: var(--card);
+  color: var(--text);
+  font-size: 17px;
+  padding: 14px;
+  border-radius: 12px;
+  outline: none;
+  font-family: inherit;
+}
+.wiz textarea { min-height: 90px; resize: vertical; }
+
+.wiz-toggle-row { display: flex; gap: 10px; }
+.wiz-toggle-row .wiz-option { flex: 1; text-align: center; }
+
+.wiz-review { display: flex; flex-direction: column; gap: 12px; }
+
+.wiz-review .item-number {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--accent);
+  background: var(--card);
+  border-radius: 12px;
+  padding: 12px 14px;
+  text-align: center;
+}
+.wiz-review .item-number-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.wiz-review .verify-note {
+  color: var(--warn);
+  font-weight: 700;
+  font-size: 14px;
+  text-align: center;
+  background: rgba(251,191,36,0.1);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+.wiz-review .quote-banner {
+  background: rgba(248,113,113,0.15);
+  color: var(--danger);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.review-card {
+  background: var(--card);
+  border-radius: 14px;
+  padding: 2px 16px;
+}
+.review-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 11px 0;
+  border-bottom: 1px solid rgba(148,163,184,0.14);
+}
+.review-row:last-child { border-bottom: none; }
+.review-row .review-label {
+  color: var(--muted);
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.review-row .review-value {
+  font-weight: 700;
+  font-size: 14px;
+  text-align: right;
+}
+.review-row.stacked {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+}
+.review-row.stacked .review-value {
+  text-align: left;
+  font-weight: 600;
+  white-space: pre-wrap;
+}
+
+.wiz-nav { display: flex; gap: 10px; margin-top: auto; }
+.wiz-nav .btn { flex: 1; font-size: 17px; padding: 15px; }
+.wiz-nav .btn.next { background: #b45309; }
+.wiz-nav .btn.confirm { background: #16a34a; }
+.wiz-nav .btn.confirm[disabled] { background: var(--card-2); color: var(--muted); opacity: 0.6; cursor: not-allowed; }
+
+/* ─── My Jobs / Job Detail (capture) ─────────────────────────────────────── */
+
+.fab-jobs {
+  left: 16px;
+  right: auto;
+  background: #1d4ed8;
+}
+
+.job-upload-row {
+  margin: 4px 0 4px;
+}
+.job-upload-row .btn {
+  width: 100%;
+  background: var(--card-2);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.job-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.job-card {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 14px 16px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  touch-action: manipulation;
+}
+.job-card:active { border-color: var(--accent); }
+
+.job-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.job-wo { font-weight: 800; font-size: 15px; }
+.job-address { font-size: 14px; color: var(--text); margin-bottom: 2px; }
+.job-meta { font-size: 12px; color: var(--muted); }
+
+.job-detail-header {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-top: -4px;
+}
+.job-detail-address { font-size: 15px; font-weight: 700; }
+.job-detail-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+.job-field-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.wiz .job-field-label + input:not([type="file"]),
+.wiz .job-field-label + select {
+  width: 100%;
+  border: none;
+  background: var(--card);
+  color: var(--text);
+  font-size: 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  outline: none;
+  font-family: inherit;
+}
+
+.payment-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.payment-option { padding: 14px; text-align: center; }
+
+.wiz input[type="file"] {
+  color: var(--text);
+  font-size: 13px;
+  margin-top: 2px;
+}
+
+.job-photo-preview-name {
+  font-size: 13px;
+  color: var(--ok);
+  margin-top: 6px;
+}
+
+.mt-sm { margin-top: 10px; }
+
+.job-pending-badge {
+  position: fixed;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 70px);
+  left: 16px;
+  background: #1e3a8a;
+  border: 1px solid rgba(96,165,250,0.4);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #93c5fd;
+  z-index: 19;
+  cursor: default;
+}
+.job-pending-badge.danger {
+  background: #7c2d12;
+  border-color: rgba(248,113,113,0.4);
+  color: var(--danger);
+  cursor: pointer;
+}

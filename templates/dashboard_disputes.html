@@ -1,0 +1,46 @@
+{% extends "dashboard_base.html" %}
+{% block title %}Disputes{% endblock %}
+{% set active_page = "disputes" %}
+{% block content %}
+<div class="section">
+  <div class="section-header"><h2>Dispute Center <span class="count">{{ disputes|length }}</span></h2></div>
+  <p class="text-sm text-muted" style="margin-bottom:var(--space-md)">
+    Jobs Winston removed from Dispatch.me, with the tech's capture evidence attached.
+  </p>
+  {% if disputes %}
+  <table>
+    <thead><tr><th>WO#</th><th>Tech</th><th>Amount</th><th>Closing notes</th><th>Evidence</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      {% for d in disputes %}
+      <tr>
+        <td><strong>{{ d.wo_number }}</strong></td>
+        <td>{{ d.tech_name or '—' }}</td>
+        <td>{% if d.amount_charged %}${{ "{:,.2f}".format(d.amount_charged) }}{% else %}—{% endif %}</td>
+        <td class="text-sm" style="max-width:280px">{{ d.closing_notes or '—' }}</td>
+        <td>{% if d.receipt_photo_path %}<a href="/dashboard/receipts/{{ d.receipt_photo_path }}" target="_blank" class="btn btn-secondary btn-sm">Photo</a>{% else %}<span class="text-muted">No capture on file</span>{% endif %}</td>
+        <td><span class="status-badge {% if d.status == 'resolved' %}status-ok{% elif d.status == 'written_off' %}status-danger{% endif %}">{{ d.status }}</span></td>
+        <td>
+          <details>
+            <summary class="btn btn-secondary btn-sm" style="cursor:pointer;list-style:none;padding:0.3rem 0.7rem">Update</summary>
+            <form method="post" action="/dashboard/disputes/status" class="flex gap-sm mt-sm" style="flex-wrap:wrap">
+              <input type="hidden" name="dispute_id" value="{{ d.id }}">
+              <select name="new_status" style="width:auto">
+                <option value="new" {% if d.status == 'new' %}selected{% endif %}>New</option>
+                <option value="sent_to_winston" {% if d.status == 'sent_to_winston' %}selected{% endif %}>Sent to Winston</option>
+                <option value="resolved" {% if d.status == 'resolved' %}selected{% endif %}>Resolved</option>
+                <option value="written_off" {% if d.status == 'written_off' %}selected{% endif %}>Written off</option>
+              </select>
+              <input type="text" name="notes" value="{{ d.notes }}" placeholder="Notes" style="width:auto;min-width:160px">
+              <button type="submit" class="btn btn-primary btn-sm">Save</button>
+            </form>
+          </details>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="text-muted">No disputes on file.</p>
+  {% endif %}
+</div>
+{% endblock %}

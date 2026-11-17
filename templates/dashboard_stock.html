@@ -1,0 +1,111 @@
+{% extends "dashboard_base.html" %}
+{% block title %}Stock{% endblock %}
+{% set active_page = "stock" %}
+{% block content %}
+
+<div class="flex gap-sm" style="margin-bottom:var(--space-lg)">
+  <a href="/dashboard/audit" target="_blank" class="btn btn-secondary">Print Audit Report</a>
+  <span class="text-sm text-muted" style="align-self:center">Edit any row directly below (checkbox + qty/min). Batch assign &amp; audit for many parts at once live in Parts Catalog → Batch Assign.</span>
+</div>
+
+{% for wh in warehouse_sections %}
+<div class="section">
+  <div class="section-header"><h2>{{ wh.warehouse.name }} <span class="count">{{ wh.stock|length }} parts</span></h2></div>
+  <div class="search-field"><input type="text" id="wh_{{ loop.index }}_search" placeholder="Search parts..." oninput="filterTable('wh_{{ loop.index }}_search', 'wh_{{ loop.index }}_table')"></div>
+  <form method="post" action="/dashboard/stock/apply-rows" id="wh_{{ loop.index }}_form">
+    <input type="hidden" name="location_type" value="warehouse">
+    <input type="hidden" name="location_id" value="{{ wh.warehouse.id }}">
+    <input type="hidden" name="method" value="audit">
+    <input type="hidden" name="rows_json" id="wh_{{ loop.index }}_rows">
+    <table id="wh_{{ loop.index }}_table">
+      <thead><tr><th style="width:32px"><input type="checkbox" onclick="toggleSectionAll(this, 'wh_{{ loop.index }}')"></th><th>Part</th><th style="width:90px">Qty</th><th style="width:90px">Min</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for s in wh.stock %}
+        <tr>
+          <td><input type="checkbox" class="row-cb" value="{{ s.part_id }}"></td>
+          <td>{{ s.part_name }}</td>
+          <td><input type="number" min="0" class="row-qty" value="{{ s.quantity }}" style="width:76px;padding:0.3rem 0.45rem"></td>
+          <td><input type="number" min="0" class="row-min" value="{{ s.min_threshold }}" style="width:76px;padding:0.3rem 0.45rem"></td>
+          <td>{% if s.quantity < s.min_threshold %}<span class="status-badge status-low">Low</span>{% else %}<span class="status-badge status-ok">OK</span>{% endif %}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-muted text-xs">No stock assigned. Use Parts Catalog → Batch Assign.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div class="batch-bar" style="margin-top:var(--space-sm)">
+      <span class="text-xs text-muted" style="font-weight:600">Apply to selected rows ({{ wh.warehouse.name }}):</span>
+      <button type="submit" class="btn btn-secondary btn-sm" onclick="return collectRows(this.form, 'wh_{{ loop.index }}')">Apply to Selected</button>
+      <span class="text-xs text-muted">Warehouse rows are set directly — they never move stock.</span>
+    </div>
+  </form>
+</div>
+{% endfor %}
+
+{% for t in trucks %}
+<div class="section">
+  <div class="section-header">
+    <h2>{{ t.truck.name }} — {{ t.truck.warehouse_name }} <span class="count">{{ t.stock|length }} parts</span></h2>
+  </div>
+  <div class="search-field"><input type="text" id="tr_{{ loop.index }}_search" placeholder="Search parts..." oninput="filterTable('tr_{{ loop.index }}_search', 'tr_{{ loop.index }}_table')"></div>
+  <form method="post" action="/dashboard/stock/apply-rows" id="tr_{{ loop.index }}_form">
+    <input type="hidden" name="location_type" value="truck">
+    <input type="hidden" name="location_id" value="{{ t.truck.id }}">
+    <input type="hidden" name="rows_json" id="tr_{{ loop.index }}_rows">
+    <table id="tr_{{ loop.index }}_table">
+      <thead><tr><th style="width:32px"><input type="checkbox" onclick="toggleSectionAll(this, 'tr_{{ loop.index }}')"></th><th>Part</th><th style="width:90px">Qty</th><th style="width:90px">Min</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for s in t.stock %}
+        <tr>
+          <td><input type="checkbox" class="row-cb" value="{{ s.part_id }}"></td>
+          <td>{{ s.part_name }}</td>
+          <td><input type="number" min="0" class="row-qty" value="{{ s.quantity }}" style="width:76px;padding:0.3rem 0.45rem"></td>
+          <td><input type="number" min="0" class="row-min" value="{{ s.min_threshold }}" style="width:76px;padding:0.3rem 0.45rem"></td>
+          <td>{% if s.quantity < s.min_threshold %}<span class="status-badge status-low">Low</span>{% else %}<span class="status-badge status-ok">OK</span>{% endif %}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-muted text-xs">No stock assigned. Use Parts Catalog → Batch Assign.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div class="batch-bar" style="margin-top:var(--space-sm)">
+      <span class="text-xs text-muted" style="font-weight:600">Method:</span>
+      <label style="font-size:var(--text-xs);display:flex;align-items:center;gap:3px;margin:0;cursor:pointer">
+        <input type="radio" name="method" value="warehouse" checked onchange="radioMethod(this.form)"> Warehouse (moves stock)
+      </label>
+      <label style="font-size:var(--text-xs);display:flex;align-items:center;gap:3px;margin:0;cursor:pointer">
+        <input type="radio" name="method" value="audit" onchange="radioMethod(this.form)"> Audit Adjust (direct)
+      </label>
+      <button type="submit" class="btn btn-secondary btn-sm" onclick="return collectRows(this.form, 'tr_{{ loop.index }}')">Apply to Selected</button>
+      <span class="text-xs text-muted">Warehouse method moves stock from the truck's warehouse (blocks if insufficient). Audit sets the row directly.</span>
+    </div>
+  </form>
+</div>
+{% endfor %}
+
+<script>
+function toggleSectionAll(master, prefix) {
+  document.querySelectorAll('#' + prefix + '_form .row-cb').forEach(cb => cb.checked = master.checked);
+}
+function radioMethod(form) {
+  if (form.querySelector('input[name="method"]:checked')) {
+    form.querySelector('input[name="rows_json"]').value = '';
+  }
+}
+function collectRows(form, prefix) {
+  var rows = [];
+  form.querySelectorAll('.row-cb:checked').forEach(cb => {
+    var tr = cb.closest('tr');
+    rows.push({
+      part_id: cb.value,
+      quantity: tr.querySelector('.row-qty').value === '' ? null : parseInt(tr.querySelector('.row-qty').value, 10),
+      min_threshold: tr.querySelector('.row-min').value === '' ? null : parseInt(tr.querySelector('.row-min').value, 10),
+    });
+  });
+  if (rows.length === 0) { alert('Select at least one row.'); return false; }
+  document.getElementById(prefix + '_rows').value = JSON.stringify(rows);
+  return true;
+}
+</script>
+
+{% endblock %}

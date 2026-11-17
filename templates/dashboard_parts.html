@@ -1,0 +1,291 @@
+{% extends "dashboard_base.html" %}
+{% block title %}Parts{% endblock %}
+{% set active_page = "parts" %}
+{% block content %}
+{% if message %}
+<div class="section" style="background:oklch(0.95 0.03 145 / 0.35);border:1px solid oklch(0.55 0.14 145 / 0.4);padding:var(--space-md);border-radius:var(--radius)">
+  <span class="text-sm">{{ message }}</span>
+</div>
+{% endif %}
+{% if import_result %}
+<div class="section">
+  <div class="section-header"><h2>Import Result</h2></div>
+  <div class="flex gap-sm" style="gap:var(--space-lg)">
+    <span class="status-badge status-ok">Created: {{ import_result.created }}</span>
+    <span class="status-badge status-warn">Updated: {{ import_result.updated }}</span>
+    {% if import_result.removed %}<span class="status-badge status-low">Removed (not in file): {{ import_result.removed }}</span>{% endif %}
+    {% if import_result.warnings %}<span class="status-badge status-warn">Warnings: {{ import_result.warnings|length }}</span>{% endif %}
+    {% if import_result.errors %}<span class="status-badge status-low">Errors: {{ import_result.errors|length }}</span>{% endif %}
+  </div>
+  {% if import_result.warnings %}<ul class="mt-sm text-sm">{% for w in import_result.warnings %}<li style="color:var(--color-warning)">{{ w }}</li>{% endfor %}</ul>{% endif %}
+  {% if import_result.errors %}<ul class="mt-sm text-sm">{% for e in import_result.errors %}<li style="color:var(--color-danger)">Row {{ e.row }}: {{ e.reason }}</li>{% endfor %}</ul>{% endif %}
+</div>
+{% endif %}
+{% if distributor_import_result %}
+<div class="section">
+  <div class="section-header"><h2>Distributor Mapping Import — {{ distributor_import_for }}</h2></div>
+  <div class="flex gap-sm" style="gap:var(--space-lg)">
+    <span class="status-badge status-ok">Created: {{ distributor_import_result.created }}</span>
+    <span class="status-badge status-warn">Updated: {{ distributor_import_result.updated }}</span>
+    {% if distributor_import_result.warnings %}<span class="status-badge status-warn">Warnings: {{ distributor_import_result.warnings|length }}</span>{% endif %}
+    {% if distributor_import_result.errors %}<span class="status-badge status-low">Errors: {{ distributor_import_result.errors|length }}</span>{% endif %}
+  </div>
+  {% if distributor_import_result.warnings %}<ul class="mt-sm text-sm">{% for w in distributor_import_result.warnings %}<li style="color:var(--color-warning)">{{ w }}</li>{% endfor %}</ul>{% endif %}
+  {% if distributor_import_result.errors %}<ul class="mt-sm text-sm">{% for e in distributor_import_result.errors %}<li style="color:var(--color-danger)">Row {{ e.row }}: {{ e.reason }}</li>{% endfor %}</ul>{% endif %}
+</div>
+{% endif %}
+<div class="section">
+  <div class="section-header"><h2>Parts Catalog <span class="count">{{ parts|length }}</span></h2></div>
+  <div class="search-field"><input type="text" id="part_search" placeholder="Search parts..." oninput="filterTable('part_search', 'part_table')"></div>
+  <form id="batch-assign-form" method="post" action="/dashboard/stock/batch-assign" onsubmit="return collectSelected()">
+    <input type="hidden" name="part_ids" id="batch-part-ids">
+    <div class="batch-bar" style="margin-bottom:var(--space-md)">
+      <span class="text-xs text-muted" style="font-weight:600">Assign selected to:</span>
+      <select name="method" style="width:auto;font-size:var(--text-xs);padding:0.3rem 0.45rem">
+        <option value="assign">Assign (moves from warehouse)</option>
+        <option value="audit">Audit Adjust (direct, no move)</option>
+      </select>
+      {% for w in all_warehouses %}
+      <label style="font-size:var(--text-xs);display:flex;align-items:center;gap:3px;cursor:pointer;white-space:nowrap">
+        <input type="checkbox" name="warehouse_ids" value="{{ w.id }}"> {{ w.name }}
+      </label>
+      {% endfor %}
+      {% for t in all_trucks %}
+      <label style="font-size:var(--text-xs);display:flex;align-items:center;gap:3px;cursor:pointer;white-space:nowrap">
+        <input type="checkbox" name="truck_ids" value="{{ t.id }}"> {{ t.name }}
+      </label>
+      {% endfor %}
+      <label class="text-xs text-muted" style="display:flex;align-items:center;gap:4px;margin:0">Qty <input type="number" name="quantity" min="0" value="0" style="width:60px"></label>
+      <label class="text-xs text-muted" style="display:flex;align-items:center;gap:4px;margin:0">Min <input type="number" name="min_threshold" min="0" value="0" style="width:60px"></label>
+      <button type="submit" class="btn btn-primary btn-sm">Assign Selected</button>
+      <span class="text-xs text-muted" style="margin-left:auto">Assign moves stock (truck deducts from its warehouse). Audit Adjust sets values directly — no stock movement.</span>
+    </div>
+    <table id="part_table">
+      <thead><tr><th style="width:32px"><input type="checkbox" id="select_all_batch" onchange="toggleAll(this)"></th><th>Name</th><th>Category</th><th>Brand</th><th>Hand</th><th>Size</th><th>Cost</th><th style="width:180px">Distributor</th><th style="width:260px"></th></tr></thead>
+      <tbody>
+        {% for p in parts %}
+        {% set active_dist = p.distributors|selectattr('is_active')|list|first %}
+        <tr>
+          <td><input type="checkbox" name="selected_part" value="{{ p.id }}" form="batch-assign-form"></td>
+          <td><strong>{{ p.name }}</strong>{% if p.notes %}<br><span class="text-xs text-muted">{{ p.notes }}</span>{% endif %}</td>
+          <td>{% if p.category %}{{ p.category }}{% if p.subcategory %} / {{ p.subcategory }}{% endif %}{% else %}—{% endif %}</td>
+          <td>{{ p.brand or "—" }}</td>
+          <td class="text-muted">{{ p.hand or "—" }}</td>
+          <td class="text-muted">{{ p.length_size or "—" }}</td>
+          <td>{{ "$%.2f"|format(p.cost) if p.cost else "—" }}</td>
+          <td>
+            {% if active_dist %}
+              <span class="status-badge status-ok">{{ active_dist.distributor_name }}</span>
+              {% if active_dist.distributor_sku %}<br><span class="text-xs text-muted">{{ active_dist.distributor_sku }}</span>{% endif %}
+            {% else %}
+              <span class="status-badge status-low">No distributor</span>
+            {% endif %}
+            <details style="display:inline-block;margin-left:0.35rem">
+              <summary class="btn btn-secondary btn-sm" style="cursor:pointer;list-style:none;padding:0.2rem 0.5rem;min-width:2.6rem;text-align:center;border:1px solid var(--color-border);font-size:var(--text-xs)">Edit</summary>
+              <div class="flex gap-sm mt-sm" style="flex-wrap:wrap">
+                {% for d in all_distributors %}
+                <form method="post" action="/dashboard/parts/distributor/set-active" class="inline-form" style="display:inline-block">
+                  <input type="hidden" name="part_id" value="{{ p.id }}">
+                  <input type="hidden" name="distributor_id" value="{{ d.id }}">
+                  <button type="submit" class="btn btn-sm {{ 'btn-primary' if (active_dist and active_dist.distributor_id == d.id) else 'btn-secondary' }}" style="padding:0.2rem 0.5rem;font-size:var(--text-xs)">{{ d.name }}{% if d.email %} <span class="text-xs">({{ d.email }})</span>{% endif %}</button>
+                </form>
+                {% endfor %}
+                <form method="post" action="/dashboard/parts/distributor/update" class="inline-form" style="display:inline-block">
+                  <input type="hidden" name="part_id" value="{{ p.id }}">
+                  <select name="distributor_id" style="font-size:var(--text-xs);padding:0.2rem 0.35rem">
+                    {% for d in all_distributors %}<option value="{{ d.id }}">{{ d.name }}</option>{% endfor %}
+                  </select>
+                  <input type="text" name="distributor_sku" placeholder="Their SKU" style="width:80px">
+                  <input type="text" name="distributor_part_name" placeholder="Their part name" style="width:110px">
+                  <button type="submit" class="btn btn-secondary btn-sm">Save SKU/Name</button>
+                </form>
+              </div>
+            </details>
+          </td>
+          <td>
+            <div style="display:flex;gap:0.75rem;align-items:center">
+              <details>
+                <summary class="btn btn-secondary btn-sm" style="cursor:pointer;list-style:none;padding:0.3rem 0.7rem;min-width:3.5rem;text-align:center;border:1px solid var(--color-border)">Edit</summary>
+                <div class="flex gap-sm mt-sm" style="flex-wrap:wrap">
+                  <form method="post" action="/dashboard/parts/rename" class="inline-form">
+                    <input type="hidden" name="part_id" value="{{ p.id }}">
+                    <input type="text" name="name" value="{{ p.name }}" style="width:140px" required>
+                    <button type="submit" class="btn btn-secondary btn-sm">Rename</button>
+                  </form>
+                  <form method="post" action="/dashboard/parts/bulk-add-alias" class="inline-form" style="display:flex;gap:0.3rem;align-items:center">
+                    <input type="hidden" name="part_id" value="{{ p.id }}">
+                    <input type="text" name="aliases_csv" placeholder="Add aliases (comma-separated)" style="width:240px">
+                    <button type="submit" class="btn btn-secondary btn-sm">Save</button>
+                  </form>
+                  {% if p.aliases %}
+                  <div class="alias-chips" style="display:flex;flex-wrap:wrap;gap:0.3rem;align-items:center;width:100%;margin-top:0.3rem">
+                    {% for a in p.aliases %}
+                    <form method="post" action="/dashboard/parts/remove-alias" class="inline-form" style="margin:0">
+                      <input type="hidden" name="part_id" value="{{ p.id }}">
+                      <input type="hidden" name="alias" value="{{ a }}">
+                      <button type="submit" class="alias-chip" title="Remove alias" style="cursor:pointer;border:1px solid var(--color-border);background:var(--color-surface-2);color:var(--color-text);padding:0.15rem 0.5rem;border-radius:999px;font-size:var(--text-xs)">{{ a }} ×</button>
+                    </form>
+                    {% endfor %}
+                  </div>
+                  {% endif %}
+                  <form method="post" action="/dashboard/parts/create" class="inline-form">
+                    <input type="hidden" name="part_id" value="{{ p.id }}">
+                    <input type="hidden" name="name" value="{{ p.name }}">
+                    <input type="hidden" name="sku" value="{{ p.id }}">
+                    <input type="url" name="amazon_sku" placeholder="Amazon URL" value="{{ p.amazon_sku or '' }}" style="width:180px">
+                    <button type="submit" class="btn btn-secondary btn-sm">Save Amazon</button>
+                  </form>
+                  <!-- Reuses /dashboard/parts/create's upsert-by-sku path: submitting the
+                       same sku updates category/subcategory/brand/supplier/unit/cost/hand/
+                       length_size/notes in place rather than creating a duplicate. Aliases
+                       are untouched here (managed by the forms above). -->
+                  <form method="post" action="/dashboard/parts/create" class="inline-form" style="display:flex;gap:0.3rem;flex-wrap:wrap;align-items:center;width:100%;margin-top:0.4rem;padding-top:0.4rem;border-top:1px dashed var(--color-border)">
+                    <input type="hidden" name="sku" value="{{ p.id }}">
+                    <input type="hidden" name="name" value="{{ p.name }}">
+                    <span class="text-xs text-muted" style="width:100%;font-weight:600">Edit details:</span>
+                    <input type="text" name="category" placeholder="Category" value="{{ p.category or '' }}" style="width:110px">
+                    <input type="text" name="subcategory" placeholder="Subcategory" value="{{ p.subcategory or '' }}" style="width:110px">
+                    <input type="text" name="brand" placeholder="Brand" value="{{ p.brand or '' }}" style="width:100px">
+                    <input type="text" name="supplier" placeholder="Supplier" value="{{ p.supplier or '' }}" style="width:100px">
+                    <select name="unit" style="width:auto;font-size:var(--text-xs)">
+                      <option value="piece" {{ "selected" if p.unit == "piece" else "" }}>piece</option>
+                      <option value="pair" {{ "selected" if p.unit == "pair" else "" }}>pair</option>
+                      <option value="pack" {{ "selected" if p.unit == "pack" else "" }}>pack</option>
+                    </select>
+                    <input type="number" name="cost" min="0" step="0.01" placeholder="Cost" value="{{ p.cost or 0 }}" style="width:80px">
+                    <input type="text" name="hand" placeholder="Hand (Left/Right)" value="{{ p.hand or '' }}" style="width:130px">
+                    <input type="text" name="length_size" placeholder="Length/Size" value="{{ p.length_size or '' }}" style="width:100px">
+                    <input type="text" name="notes" placeholder="Notes" value="{{ p.notes or '' }}" style="width:160px">
+                    <button type="submit" class="btn btn-secondary btn-sm">Save Details</button>
+                  </form>
+                </div>
+              </details>
+              <form method="post" action="/dashboard/parts/deactivate" onsubmit="return confirm('Deactivate {{ p.id }}?')">
+                <input type="hidden" name="part_id" value="{{ p.id }}">
+                <button type="submit" class="btn btn-danger btn-sm" style="padding:0.3rem 0.7rem;min-width:3.5rem;text-align:center;border:1px solid oklch(0.55 0.18 30 / 0.3)">Delete</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </form>
+
+  <div class="batch-bar" style="margin-bottom:var(--space-md)">
+    <span class="text-xs text-muted" style="font-weight:600">Set active distributor for selected:</span>
+    <form id="batch-distributor-form" method="post" action="/dashboard/parts/batch-distributor" style="display:inline;margin:0" onsubmit="return collectSelectedDistributor()">
+      <input type="hidden" name="part_ids" id="batch-distributor-ids">
+      <select name="distributor_id" style="width:auto;font-size:var(--text-xs);padding:0.3rem 0.45rem">
+        {% for d in all_distributors %}
+        <option value="{{ d.id }}">{{ d.name }}{% if d.email %} ({{ d.email }}){% else %} — no email{% endif %}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn btn-secondary btn-sm">Set Active</button>
+    </form>
+  </div>
+</div>
+
+<div class="two-col">
+  <div class="form-card">
+    <h3>Create Part</h3>
+    <form method="post" action="/dashboard/parts/create">
+      <label>Product Name *</label><input type="text" name="name" required>
+      <label class="mt-sm">SKU</label><input type="text" name="sku" placeholder="Auto-generate if empty">
+      <label class="mt-sm">Category</label><input type="text" name="category">
+      <label class="mt-sm">Subcategory</label><input type="text" name="subcategory">
+      <label class="mt-sm">Brand</label><input type="text" name="brand">
+      <label class="mt-sm">Supplier</label><input type="text" name="supplier">
+      <label class="mt-sm">Cost</label><input type="number" name="cost" min="0" step="0.01" value="0">
+      <label class="mt-sm">Unit</label><select name="unit"><option value="piece">piece</option><option value="pair">pair</option><option value="pack">pack</option></select>
+      <label class="mt-sm">Hand</label><input type="text" name="hand" placeholder="Left, Right, or empty">
+      <label class="mt-sm">Length/Size</label><input type="text" name="length_size">
+      <label class="mt-sm">Aliases</label><input type="text" name="aliases" placeholder="comma, separated, aliases">
+      <label class="mt-sm">Amazon URL</label><input type="url" name="amazon_sku" placeholder="https://www.amazon.com/dp/...">
+      <label class="mt-sm">Notes</label><textarea name="notes" rows="2"></textarea>
+      <button type="submit" class="btn btn-primary mt-md">Create Part</button>
+    </form>
+  </div>
+  <div class="form-card">
+    <h3>Bulk Import</h3>
+    <p class="text-xs text-muted" style="margin-bottom:var(--space-md)">Upload a CSV or XLSX file with headers: Category, Subcategory, Product Name, Hand, Length/Size, Brand, Qty On Hand, Min Qty, Warehouse, Truck, Supplier, Cost, Notes, Amazon URL</p>
+    <form method="post" action="/dashboard/parts/bulk-import" enctype="multipart/form-data">
+      <input type="file" name="file" accept=".csv,.xlsx" required">
+      <button type="submit" class="btn btn-primary mt-md">Import</button>
+    </form>
+    <h3 style="margin-top:var(--space-lg)">Import Distributor Catalog (Excel)</h3>
+    <p class="text-xs text-muted" style="margin-bottom:var(--space-md)">Upload the vendor's catalog Excel (e.g. Service Spring's <code>2026 Monthly Usage</code> sheet). Each row becomes a canonical part (<code>P-NNNN</code>) with the vendor's <strong>Part #</strong> and <strong>Description</strong> stored as aliases. Re-running the same file is idempotent. <a href="/dashboard/distributors">Manage distributors →</a></p>
+    <form method="post" action="/dashboard/parts/import-distributor-excel" enctype="multipart/form-data">
+      <label>Distributor</label>
+      <select name="distributor_id" required>
+        <option value="" disabled selected>Select distributor…</option>
+        {% for d in all_distributors %}
+        <option value="{{ d.id }}">{{ d.name }}{% if d.email %} ({{ d.email }}){% else %} — no email{% endif %}</option>
+        {% endfor %}
+      </select>
+      <label class="mt-sm">Excel file (.xlsx)</label>
+      <input type="file" name="file" accept=".xlsx" required>
+      <button type="submit" class="btn btn-primary mt-md">Import Catalog</button>
+    </form>
+    <h3 style="margin-top:var(--space-lg)">Import Distributor Mapping (CSV)</h3>
+    <p class="text-xs text-muted" style="margin-bottom:var(--space-md)">Upload a CSV with headers: Product SKU, Distributor SKU, Distributor Part Name — maps existing DoorFlex parts to a distributor's own SKU/name.</p>
+    <form method="post" action="/dashboard/parts/distributor/import" enctype="multipart/form-data">
+      <select name="distributor_id" required>
+        <option value="" disabled selected>Select distributor…</option>
+        {% for d in all_distributors %}
+        <option value="{{ d.id }}">{{ d.name }}{% if d.email %} ({{ d.email }}){% else %} — no email{% endif %}</option>
+        {% endfor %}
+      </select>
+      <input type="file" name="file" accept=".csv" required>
+      <button type="submit" class="btn btn-primary mt-md">Import Mapping</button>
+    </form>
+  </div>
+</div>
+<div class="section" style="margin-top:var(--space-md)">
+  <div class="section-header"><h2>Distributor Emails</h2></div>
+  <p class="text-xs text-muted" style="margin-bottom:var(--space-md)">Reorder emails (C.1) are only sent to a distributor when an email is set here. Empty = no email sent.</p>
+  <div style="display:flex;flex-wrap:wrap;gap:var(--space-md)">
+    {% for d in all_distributors %}
+    <form method="post" action="/dashboard/parts/distributor/update-email" class="inline-form">
+      <input type="hidden" name="distributor_id" value="{{ d.id }}">
+      <label style="font-size:var(--text-xs);font-weight:600">{{ d.name }}</label>
+      <input type="email" name="email" value="{{ d.email or '' }}" placeholder="distributor@email.com" style="width:200px">
+      <button type="submit" class="btn btn-secondary btn-sm">Save</button>
+    </form>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function toggleAll(master) {
+  document.querySelectorAll('input[name="selected_part"]').forEach(cb => cb.checked = master.checked);
+}
+function collectSelected() {
+  var ids = [];
+  document.querySelectorAll('input[name="selected_part"]:checked').forEach(cb => ids.push(cb.value));
+  if (ids.length === 0) {
+    alert('Select at least one part first.');
+    return false;
+  }
+  var dest = document.querySelectorAll('input[name="warehouse_ids"]:checked, input[name="truck_ids"]:checked').length;
+  if (dest === 0) {
+    alert('Select at least one warehouse or truck to assign to.');
+    return false;
+  }
+  document.getElementById('batch-part-ids').value = ids.join(',');
+  return true;
+}
+function collectSelectedDistributor() {
+  var ids = [];
+  document.querySelectorAll('input[name="selected_part"]:checked').forEach(cb => ids.push(cb.value));
+  if (ids.length === 0) {
+    alert('Select at least one part first.');
+    return false;
+  }
+  document.getElementById('batch-distributor-ids').value = ids.join(',');
+  return true;
+}
+</script>
+{% endblock %}

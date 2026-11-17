@@ -1,0 +1,77 @@
+{% extends "dashboard_base.html" %}
+{% block title %}Packages{% endblock %}
+{% set active_page = "packages" %}
+{% block content %}
+{% if message %}
+<div class="section" style="background:oklch(0.95 0.03 145 / 0.35);border:1px solid oklch(0.55 0.14 145 / 0.4);padding:var(--space-md);border-radius:var(--radius)">
+  <span class="text-sm">{{ message }}</span>
+</div>
+{% endif %}
+<div class="section">
+  <div class="section-header"><h2>Packages <span class="count">{{ packages|length }}</span></h2></div>
+  <div class="search-field"><input type="text" id="pkg_search" placeholder="Search packages..." oninput="filterTable('pkg_search', 'pkg_table')"></div>
+  <table id="pkg_table">
+    <thead><tr><th>Name</th><th>Parts</th><th></th></tr></thead>
+    <tbody>
+      {% for pkg in packages %}
+      <tr>
+        <td>{{ pkg.name }}</td>
+        <td><span class="text-sm">{% for item in pkg.parts_json %}{{ item.part_id }} x{{ item.qty }}{% if not loop.last %}, {% endif %}{% endfor %}</span></td>
+        <td>
+          <form method="post" action="/dashboard/packages/delete/{{ pkg.id }}" class="inline-form" onsubmit="return confirm('Delete package &quot;{{ pkg.name }}&quot;?')">
+            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="two-col">
+  <div class="form-card">
+    <h3>Create Package</h3>
+    <form method="post" action="/dashboard/packages/create" onsubmit="return buildPartsJson(this, 'create')">
+      <label>Package Name</label><input type="text" name="name" required>
+      <input type="hidden" name="parts_json" id="create_parts_json">
+      <label class="mt-sm">Parts</label>
+      <div class="form-inline">
+        <select id="create_part_select" style="flex:1">{% for p in all_parts %}<option value="{{ p.id }}">{{ p.name }}</option>{% endfor %}</select>
+        <input type="number" id="create_part_qty" value="1" min="1" style="width:60px">
+        <button type="button" class="btn btn-primary btn-sm" onclick="addPart('create')">+ Add</button>
+      </div>
+      <table id="create_parts_table" class="mt-sm"><thead><tr><th>Part</th><th>Qty</th><th></th></tr></thead><tbody></tbody></table>
+      <button type="submit" class="btn btn-primary mt-md">Create Package</button>
+    </form>
+  </div>
+  <div class="form-card">
+    <h3>Update Package</h3>
+    <form method="post" action="/dashboard/packages/update" onsubmit="return buildPartsJson(this, 'update')">
+      <label>Package</label>
+      <select name="package_id" required onchange="loadPackageParts(this)">
+        <option value="">— Select —</option>{% for pkg in packages %}
+        <option value="{{ pkg.id }}" data-parts='{{ pkg.parts_json | tojson }}'>{{ pkg.name }}</option>{% endfor %}
+      </select>
+      <label class="mt-sm">New Name</label><input type="text" name="name" placeholder="Keep current if blank">
+      <input type="hidden" name="parts_json" id="update_parts_json">
+      <div class="form-inline mt-sm">
+        <select id="update_part_select" style="flex:1">{% for p in all_parts %}<option value="{{ p.id }}">{{ p.name }}</option>{% endfor %}</select>
+        <input type="number" id="update_part_qty" value="1" min="1" style="width:60px">
+        <button type="button" class="btn btn-primary btn-sm" onclick="addPart('update')">+ Add</button>
+      </div>
+      <table id="update_parts_table" class="mt-sm"><thead><tr><th>Part</th><th>Qty</th><th></th></tr></thead><tbody></tbody></table>
+      <button type="submit" class="btn btn-primary mt-md">Update Package</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+const partsLists = { create: [], update: [] };
+function addPart(p){const s=document.getElementById(p+'_part_select'),q=document.getElementById(p+'_part_qty'),id=s.value,n=s.options[s.selectedIndex].text,qt=parseInt(q.value)||1;if(!id)return;const e=partsLists[p].find(x=>x.part_id===id);e?e.qty+=qt:partsLists[p].push({part_id:id,qty:qt});renderParts(p);q.value=1}
+function removePart(p,i){partsLists[p].splice(i,1);renderParts(p)}
+function renderParts(p){const t=document.querySelector('#'+p+'_parts_table tbody');t.innerHTML='';partsLists[p].forEach((x,i)=>{const r=document.createElement('tr');r.innerHTML='<td>'+x.part_id+'</td><td>'+x.qty+'</td><td><button type="button" class="btn btn-secondary btn-sm btn-icon" onclick="removePart(\''+p+'\','+i+')">✕</button></td>';t.appendChild(r)})}
+function buildPartsJson(f,p){document.getElementById(p+'_parts_json').value=JSON.stringify(partsLists[p]);return true}
+function loadPackageParts(s){const p='update';partsLists[p]=[];if(!s.value)return;try{partsLists[p]=JSON.parse(s.options[s.selectedIndex].getAttribute('data-parts'))}catch(e){}renderParts(p)}
+</script>
+{% endblock %}

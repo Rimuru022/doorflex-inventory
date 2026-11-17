@@ -1,0 +1,143 @@
+{% extends "dashboard_base.html" %}
+{% block title %}Unmatched Parts{% endblock %}
+{% set active_page = "unmatched" %}
+{% block content %}
+{% if message %}
+<div class="section" style="background:oklch(0.95 0.05 85 / 0.3);border:1px solid oklch(0.65 0.14 85 / 0.4);padding:var(--space-md);border-radius:var(--radius)">
+  <span class="text-sm">{{ message }}</span>
+</div>
+{% endif %}
+<div class="section">
+  <div class="section-header"><h2>Tech Confirmation <span class="count">{{ tech_confirmations|length }}</span></h2></div>
+  {% if tech_confirmations %}
+  <p class="text-sm" style="margin-bottom:var(--space-sm)">The tech name on the invoice didn't match any roster tech exactly. Select the correct tech to reprocess the invoice under them.</p>
+  <div class="search-field"><input type="text" id="tech_confirm_search" placeholder="Search..." oninput="filterTable('tech_confirm_search', 'tech_confirm_table')"></div>
+  <table id="tech_confirm_table">
+    <thead><tr><th>Invoice Tech Name</th><th>Best Matches</th><th>Invoice</th><th>Received (AZ)</th><th>Confirm As</th></tr></thead>
+    <tbody>
+      {% for tc in tech_confirmations %}
+      <tr>
+        <td style="font-weight:600">{{ tc.raw_name }}</td>
+        <td>
+          <span class="text-xs text-muted">
+            {% for score, t in (tech_suggestions.get(tc.id) or [])[:3] %}
+              {{ t.name }} ({{ score }}){% if not loop.last %}, {% endif %}
+            {% endfor %}
+          </span>
+        </td>
+        <td class="text-xs">{{ tc.invoice_name or "—" }}</td>
+        <td class="text-xs text-muted">{{ tc.created_at|phx }}</td>
+        <td>
+          <form method="post" action="/dashboard/unmatched/tech-confirm" class="inline-form">
+            <input type="hidden" name="unmatched_id" value="{{ tc.id }}">
+            <select name="tech_id" style="max-width:220px">
+              <option value="">— Select tech —</option>
+              {% for t in all_techs %}<option value="{{ t.id }}">{{ t.name }} — {{ t.truck_id }}</option>{% endfor %}
+            </select>
+            <button type="submit" class="btn btn-primary btn-sm">Confirm & Process</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="text-muted">No technician confirmations pending.</p>
+  {% endif %}
+</div>
+
+<div class="section">
+  <div class="section-header"><h2>PWA Source Flags <span class="count">{{ pwa_source_flags|length }}</span></h2></div>
+  {% if pwa_source_flags %}
+  <p class="text-sm" style="margin-bottom:var(--space-sm)">Invoices from a tech that deducts via the PWA are flagged instead of deducted (anti double-deduction). No action needed — the tech records usage from the app.</p>
+  <table>
+    <thead><tr><th>Tech</th><th>Note</th><th>Invoice</th><th>Received (AZ)</th></tr></thead>
+    <tbody>
+      {% for f in pwa_source_flags %}
+      <tr>
+        <td style="font-weight:600">{{ f.tech_name }}</td>
+        <td class="text-xs">{{ f.raw_name }}</td>
+        <td class="text-xs">{{ f.invoice_name or "—" }}</td>
+        <td class="text-xs text-muted">{{ f.created_at|phx }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="text-muted">No PWA-source invoices flagged.</p>
+  {% endif %}
+</div>
+
+<div class="section">
+  <div class="section-header"><h2>Unmatched Parts <span class="count">{{ unmatched|length }}</span></h2></div>
+  {% if unmatched %}
+  <form method="post" action="/dashboard/unmatched/bulk-map">
+    <div class="search-field"><input type="text" id="unmatched_search" placeholder="Search..." oninput="filterTable('unmatched_search', 'unmatched_table')"></div>
+    <table id="unmatched_table">
+      <thead><tr><th>Tech</th><th>Raw Name</th><th>Qty</th><th>Invoice</th><th>Received (AZ)</th><th>Map To</th></tr></thead>
+      <tbody>
+        {% for u in unmatched %}
+        <tr>
+          <td>{{ u.tech_name }}</td>
+          <td>{{ u.raw_name }}</td>
+          <td>{{ u.quantity }}</td>
+          <td class="text-xs">{{ u.invoice_name or "—" }}</td>
+          <td class="text-xs text-muted">{{ u.created_at|phx }}</td>
+          <td>
+            <select name="map_{{ u.id }}" style="max-width:240px">
+              <option value="">— Leave Unmapped —</option>
+              {% for p in all_parts %}
+              <option value="{{ u.id }}:{{ p.id }}">{{ p.name }}</option>
+              {% endfor %}
+            </select>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <button type="submit" class="btn btn-primary mt-md">Save Selected Mappings</button>
+  </form>
+  {% else %}
+  <p class="text-muted">No unmatched parts. All incoming part names have been matched.</p>
+  {% endif %}
+</div>
+
+<div class="section">
+  <div class="section-header"><h2>Unmatched Packages <span class="count">{{ unmatched_packages|length }}</span></h2></div>
+  {% if unmatched_packages %}
+  <p class="text-sm" style="margin-bottom:var(--space-sm)">First create the package with its parts in the Packages tab, then assign the invoice here. Deduction only happens once the package has parts.</p>
+  <table>
+    <thead><tr><th>Tech</th><th>Package Description</th><th>Invoice</th><th>Received (AZ)</th><th>Map To Package</th><th>Or Create</th></tr></thead>
+    <tbody>
+      {% for up in unmatched_packages %}
+      <tr>
+        <td>{{ up.tech_name }}</td>
+        <td>{{ up.raw_name }}</td>
+        <td class="text-xs">{{ up.invoice_name or up.invoice_id }}</td>
+        <td class="text-xs text-muted">{{ up.created_at|phx }}</td>
+        <td>
+          <form method="post" action="/dashboard/unmatched/package-map" class="inline-form">
+            <select name="pkg_map_{{ up.id }}" style="max-width:240px">
+              <option value="">— Leave Unmapped —</option>
+              {% for pkg in all_packages %}
+              <option value="{{ up.id }}:{{ pkg.id }}">{% if not pkg_has_parts.get(pkg.id) %}{{ pkg.name }} (no parts yet){% else %}{{ pkg.name }}{% endif %}</option>
+              {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-primary btn-sm">Assign & Deduct</button>
+          </form>
+        </td>
+        <td>
+          <form method="post" action="/dashboard/unmatched/package-create" class="inline-form" onsubmit="return confirm('Create package &quot;{{ up.raw_name }}&quot;? Add its parts in the Packages tab, then come back to assign this invoice.')">
+            <input type="hidden" name="unmatched_id" value="{{ up.id }}">
+            <button type="submit" class="btn btn-secondary btn-sm">Create Package</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="text-muted">No unmatched packages. All incoming package names have been matched.</p>
+  {% endif %}
+</div>
+{% endblock %}

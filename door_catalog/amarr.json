@@ -1,0 +1,173 @@
+{
+  "_source": "Amarr public product pages (amarr.com), researched 2026-08-20. No official Amarr price book on file yet, unlike coachman.json/avante.json which were built from Nick's real price books — this file is built from Amarr's public marketing/spec pages instead. Any field marked \"_verify_with_nick\": true could not be confirmed from public sources (Amarr doesn't publish exact per-model size charts or full color-name lists) and uses a reasonable placeholder (standard US garage-door size increments, or a partial/representative color list) rather than an invented precise value. Treat this catalog as review-before-trust, same as any AI-parsed data in this app, until Nick supplies the real price book.",
+  "label": "Amarr",
+  "size_rule": {
+    "_verify_with_nick": true,
+    "widths": ["8'0\"", "9'0\"", "10'0\"", "12'0\"", "14'0\"", "16'0\"", "18'0\""],
+    "heights": ["7'0\"", "7'6\"", "8'0\"", "9'0\"", "10'0\""]
+  },
+  "collections": {
+    "classica": {
+      "label": "Classica",
+      "construction": "Steel, 1/2/3-layer, 5-layer paint system",
+      "insulations": [
+        {"code": "NONE", "label": "Non-insulated", "r_value": null},
+        {"code": "POLY_2L", "label": "2-layer polystyrene", "r_value": 6.64},
+        {"code": "POLYU_3L", "label": "3-layer polyurethane", "r_value": 13.35}
+      ],
+      "designs": ["Valencia", "Tuscany", "Cortona", "Lucern", "Bordeaux", "Northampton", "Santiago"],
+      "windows": {
+        "allowed": true,
+        "styles": ["DecraGlass Jardin", "DecraGlass Trellis", "DecraTrim Danube", "DecraTrim Madeira", "DecraTrim Nile", "DecraTrim Rhine", "DecraTrim Seine", "DecraTrim Thames"],
+        "glass_types": ["Clear", "Obscure", "Frost", "Dark Tint", "Insulated"]
+      },
+      "colors": {"_verify_with_nick": true, "count": 13, "known": ["White", "Almond", "Sandtone", "Brown", "Black"], "note": "13 factory colors total (only 5 confirmed by name) + Amarr Color Zone (800+ Sherwin-Williams)"}
+    },
+    "classica_full_view": {
+      "label": "Classica Full View",
+      "construction": "Steel, triple-layer, 5-layer paint system",
+      "insulations": [
+        {"code": "POLYU_3L", "label": "3-layer polyurethane (2\")", "r_value": 13.35}
+      ],
+      "designs": ["3-Section Full View"],
+      "windows": {
+        "allowed": true,
+        "styles": ["DecraGlass (3 designs)", "DecraTrim (6 styles)"],
+        "glass_types": ["Double-strength", "Obscure", "Frost", "Dark Tint", "Insulated"]
+      },
+      "colors": {"_verify_with_nick": true, "count": 12, "known": ["White", "Almond", "Sandtone", "Brown", "Black"], "note": "12 factory colors total (only 5 confirmed by name) + Amarr Color Zone"}
+    },
+    "classica_flush": {
+      "label": "Classica Flush",
+      "construction": "Steel, triple-layer, 5-layer paint system",
+      "insulations": [
+        {"code": "POLYU_3L", "label": "3-layer polyurethane (2\")", "r_value": 13.35}
+      ],
+      "designs": ["Flush Panel (3-section)"],
+      "windows": {
+        "allowed": true,
+        "styles": ["DecraGlass (3 designs)"],
+        "glass_types": ["Double-strength", "Obscure", "Frost", "Dark Tint", "Insulated"]
+      },
+      "colors": {"_verify_with_nick": true, "count": 8, "known": ["White", "Almond", "Sandtone", "Brown", "Black"], "note": "8 factory colors total (only 5 confirmed by name) + Amarr Color Zone"}
+    },
+    "carriage_court": {
+      "label": "Carriage Court",
+      "construction": "Steel + 5/8\" composite overlay trim, 4-layer",
+      "insulations": [
+        {"code": "POLY_1L", "label": "1-3/8\" polystyrene", "r_value": 6.48}
+      ],
+      "designs": ["18 carriage-house overlay designs — see distributor sample book"],
+      "windows": {
+        "allowed": true,
+        "styles": ["Large rectangular (24\" top section)", "Arched (24\" top section)"],
+        "glass_types": ["Clear", "Obscure", "Frost", "Dark Tint"]
+      },
+      "colors": {"_verify_with_nick": true, "known": ["White", "Almond", "Sandtone", "Brown", "Black"], "note": "Factory colors + Amarr Color Zone; exact count not published"}
+    },
+    "designers_choice": {
+      "label": "Designer's Choice",
+      "construction": "Steel, triple-layer, 5-layer paint system",
+      "insulations": [
+        {"code": "POLYU_138", "label": "1-3/8\" polyurethane", "r_value": 13.35},
+        {"code": "POLYU_2", "label": "2\" polyurethane", "r_value": 19.40}
+      ],
+      "designs": ["4 permanent stamped-steel carriage house designs — see distributor sample book"],
+      "windows": {
+        "allowed": true,
+        "styles": ["DecraGlass"],
+        "glass_types": ["Double-strength", "Obscure", "Frost", "Dark Tint", "Insulated"]
+      },
+      "colors": {"_verify_with_nick": true, "count": 8, "known": ["White", "Almond", "Sandtone", "Brown", "Black"], "note": "8 factory colors total (only 5 confirmed by name) + Amarr Color Zone"}
+    },
+    "hillcrest": {
+      "label": "Hillcrest",
+      "construction": "Steel, 1/2/3-layer, 5-layer paint system",
+      "insulations": [
+        {"code": "NONE", "label": "Non-insulated", "r_value": null},
+        {"code": "POLY_138", "label": "1-3/8\" polystyrene", "r_value": 6.48},
+        {"code": "POLY_2", "label": "2\" polystyrene", "r_value": 9.05}
+      ],
+      "designs": ["Recessed", "Bead Board", "Long Bead Board"],
+      "windows": {
+        "allowed": true,
+        "styles": ["DecraGlass (5 designs)", "DecraTrim (11 styles)"],
+        "glass_types": ["Clear", "Obscure", "Frost", "Dark Tint", "Insulated"]
+      },
+      "colors": {"_verify_with_nick": true, "count": 12, "known": ["White", "Almond", "Sandtone", "Brown", "Black"], "note": "12 factory colors total (only 5 confirmed by name) + Amarr Color Zone"}
+    },
+    "heritage": {
+      "label": "Heritage",
+      "construction": "Steel (24ga), 1/2/3-layer, 5-layer paint system",
+      "insulations": [
+        {"code": "NONE", "label": "Non-insulated", "r_value": null},
+        {"code": "POLY_2", "label": "2\" polystyrene", "r_value": 6.64}
+      ],
+      "designs": ["Flush Panel", "Short Panel", "Long Panel", "Ribbed Panel"],
+      "windows": {
+        "allowed": true,
+        "styles": ["DecraGlass (5 designs)", "DecraTrim (10 styles)"],
+        "glass_types": ["Clear", "Obscure", "Frost", "Dark Tint", "Insulated"]
+      },
+      "colors": {"_verify_with_nick": true, "count": 11, "known": ["White", "Almond", "Sandtone", "Brown", "Black"], "note": "11 factory colors total (only 5 confirmed by name) + Amarr Color Zone"}
+    },
+    "olympus": {
+      "label": "Olympus",
+      "construction": "Steel, triple-layer, 5-layer paint system",
+      "insulations": [
+        {"code": "POLYU_138", "label": "1-3/8\" polyurethane", "r_value": 13.35},
+        {"code": "POLYU_2", "label": "2\" polyurethane", "r_value": 19.40}
+      ],
+      "designs": ["Long Panel", "Short Panel"],
+      "windows": {
+        "allowed": true,
+        "styles": ["DecraGlass (10 designs)", "DecraTrim (12 designs)", "Mosaic"],
+        "glass_types": ["Clear", "Obscure", "Frost", "Dark Tint", "Insulated"]
+      },
+      "colors": {"_verify_with_nick": true, "count": 8, "known": ["White", "Almond", "Sandtone", "Brown", "Black"], "note": "8 factory colors total (only 5 confirmed by name) + Amarr Color Zone"}
+    },
+    "northwoods": {
+      "label": "Northwoods",
+      "construction": "Steel, triple-layer, printed horizontal plank finish",
+      "insulations": [
+        {"code": "NW3138", "label": "NW3138 — 1-3/8\" polystyrene", "r_value": 6.48},
+        {"code": "NW3000", "label": "NW3000 — 2\" polystyrene", "r_value": 9.05}
+      ],
+      "designs": ["Short Panel windows", "Long Panel windows", "SlimLine windows"],
+      "windows": {
+        "allowed": true,
+        "styles": ["Short Panel", "Long Panel", "SlimLine (black frame)", "Mosaic"],
+        "glass_types": ["Clear", "Obscure", "Frost", "Dark Tint"]
+      },
+      "colors": {"known": ["Cedar", "Dune", "Coffee", "Aspen Gray", "Onyx"], "note": "5 plank finishes, fully confirmed"}
+    }
+  },
+  "aluminum_full_view": {
+    "3552": {
+      "label": "3552 — Aluminum Full View (Commercial, heavy duty)",
+      "construction": "2\" extruded aluminum, stile & rail",
+      "width_max_in": 290,
+      "height_max_in": 241,
+      "panel_options": ["Solid Aluminum Panel", "Perforated Panel", "Glass Panel", "Louvered Panel"],
+      "glass_types": ["Clear Tint", "Obscure", "Green Tint", "Bronze Tint", "Gray Tint", "GreyLite", "Frost", "Snow", "Whiteout", "Black Ice"],
+      "colors": {
+        "anodized": ["Clear", "Dark Bronze", "Black", "Champagne", "Copper", "Medium Bronze"],
+        "powder_coat": ["White", "Bone White", "Ivory", "Sandstone", "Burnt Sun", "Sierra Tan", "Beige", "Light Seawolf Beige", "Dove Gray", "Slate Gray", "Charcoal Gray", "Patina Green", "Dark Ivy", "Hartford Green", "Military Blue", "Interstate Blue", "Colonial Red", "Boysenberry", "Sage Brown", "Quaker Bronze", "Super Black", "Carnival Red II", "Classic Copper", "Champagne Pearl", "Pewter", "Silver"]
+      }
+    },
+    "3502": {
+      "_verify_with_nick": true,
+      "label": "3502 — Aluminum Full View (Commercial, light duty)",
+      "construction": "2\" extruded aluminum, 1-layer, light duty",
+      "width_max_in": null,
+      "height_max_in": null,
+      "panel_options": ["Solid Aluminum Panel", "Glass Panel"],
+      "glass_types": ["Clear Tint", "Obscure", "Green Tint", "Bronze Tint", "Gray Tint", "GreyLite", "Frost", "Snow", "Whiteout", "Black Ice"],
+      "colors": {
+        "_note": "Finish list not separately published for 3502 — assumed same anodized/powder-coat options as 3552 (same product family); verify with Nick/distributor before quoting.",
+        "anodized": ["Clear", "Dark Bronze", "Black", "Champagne", "Copper", "Medium Bronze"],
+        "powder_coat": ["White", "Bone White", "Ivory", "Sandstone", "Burnt Sun", "Sierra Tan", "Beige", "Light Seawolf Beige", "Dove Gray", "Slate Gray", "Charcoal Gray", "Patina Green", "Dark Ivy", "Hartford Green", "Military Blue", "Interstate Blue", "Colonial Red", "Boysenberry", "Sage Brown", "Quaker Bronze", "Super Black", "Carnival Red II", "Classic Copper", "Champagne Pearl", "Pewter", "Silver"]
+      }
+    }
+  }
+}

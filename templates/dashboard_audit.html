@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DoorFlex Audit Report - {{ date }}</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --color-text:oklch(0.15 0.01 50);
+  --color-muted:oklch(0.55 0.012 50);
+  --color-border:oklch(0.88 0.006 50);
+  --color-danger:oklch(0.55 0.18 30);
+  --text-xs:0.75rem;
+  --text-sm:0.8125rem;
+  --text-base:0.9375rem;
+  --text-lg:1.125rem;
+  --space-sm:0.5rem;
+  --space-md:1rem;
+  --space-lg:1.5rem;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  font-size:var(--text-base);color:var(--color-text);
+  -webkit-font-smoothing:antialiased;
+  background:#fff;
+}
+body{padding:1.5in 0.75in}
+h1{font-size:var(--text-lg);font-weight:700;margin-bottom:0.25rem}
+h2{font-size:var(--text-base);font-weight:600;margin:var(--space-lg) 0 var(--space-sm);border-bottom:1px solid var(--color-border);padding-bottom:0.25rem}
+.meta{font-size:var(--text-xs);color:var(--color-muted);margin-bottom:var(--space-lg)}
+table{width:100%;border-collapse:collapse;margin-bottom:var(--space-lg)}
+th{font-size:var(--text-xs);font-weight:600;text-transform:uppercase;letter-spacing:0.03em;color:var(--color-muted);
+  text-align:left;padding:0.4rem 0.5rem;border-bottom:1px solid var(--color-text)}
+td{padding:0.4rem 0.5rem;border-bottom:1px solid var(--color-border);font-size:var(--text-sm)}
+.actual-col{background:oklch(0.97 0.003 50)}
+.variance-col{font-weight:600}
+.low{color:var(--color-danger)}
+.footer{margin-top:var(--space-2xl);font-size:var(--text-xs);color:var(--color-muted);padding-top:var(--space-lg);border-top:1px solid var(--color-border)}
+.sign-line{margin-top:var(--space-xl)}
+@media print{body{padding:0.5in} .no-print{display:none}}
+</style>
+</head>
+<body>
+<h1>DoorFlex Inventory &mdash; Audit Report</h1>
+<p class="meta">{{ date }} &middot; Printed {{ now }}</p>
+
+{% for truck in trucks %}
+<h2>{{ truck.id }} — {{ truck.name }} &middot; {{ truck.warehouse_name }}</h2>
+<table>
+  <thead><tr><th>Part</th><th>Unit</th><th>Expected</th><th class="actual-col">Actual</th><th class="variance-col">Variance</th></tr></thead>
+  <tbody>
+    {% for s in truck.stock %}
+    <tr>
+      <td>{{ s.part_name }}</td>
+      <td class="text-muted">{{ s.unit }}</td>
+      <td{% if s.quantity < s.min_threshold %} class="low"{% endif %}>{{ s.quantity }}</td>
+      <td class="actual-col">&nbsp;</td>
+      <td class="variance-col">&nbsp;</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endfor %}
+
+{% for wh in warehouses %}
+<h2>{{ wh.name }}</h2>
+<table>
+  <thead><tr><th>Part</th><th>Unit</th><th>Expected</th><th class="actual-col">Actual</th><th class="variance-col">Variance</th></tr></thead>
+  <tbody>
+    {% for s in wh.stock %}
+    <tr>
+      <td>{{ s.part_name }}</td>
+      <td class="text-muted">{{ s.unit }}</td>
+      <td>{{ s.quantity }}</td>
+      <td class="actual-col">&nbsp;</td>
+      <td class="variance-col">&nbsp;</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endfor %}
+
+<div class="footer">
+  <p>Count each part physically. Write the actual count in the "Actual" column. Variance = Actual &minus; Expected. Negative variance means missing parts.</p>
+  <div class="sign-line">Audited by: ______________________________ &nbsp;&nbsp; Date: _______________</div>
+</div>
+<div class="no-print" style="margin-top:var(--space-md)">
+  <button onclick="window.print()" style="padding:0.4rem 1rem;border:1px solid var(--color-border);border-radius:6px;background:#fff;cursor:pointer;font-size:var(--text-sm)">🖨️ Print</button>
+  <button onclick="window.close()" style="padding:0.4rem 1rem;border:1px solid var(--color-border);border-radius:6px;background:#fff;cursor:pointer;font-size:var(--text-sm);margin-left:0.5rem">Close</button>
+</div>
+</body>
+</html>

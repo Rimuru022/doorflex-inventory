@@ -1,0 +1,135 @@
+{% extends "dashboard_base.html" %}
+{% block title %}Techs{% endblock %}
+{% set active_page = "techs" %}
+{% block content %}
+<div class="section">
+  <div class="section-header"><h2>Techs <span class="count">{{ techs|length }}</span></h2></div>
+  <p class="text-sm text-muted" style="margin-bottom:var(--space-md)">
+    <strong>PWA link</strong> genera el enlace de instalación para el teléfono del tech
+    (<code>/tech/pwa/?t=…</code>). Generarlo revoca el anterior y marca al tech como
+    fuente <em>PWA</em> (sus facturas por email ya no deducen stock). Revoke lo invalida.
+  </p>
+  <div class="search-field"><input type="text" id="tech_search" placeholder="Search techs..." oninput="filterTable('tech_search', 'tech_table')"></div>
+  <table id="tech_table">
+    <thead><tr><th>Name</th><th>Truck</th><th>PWA</th><th style="width:220px"></th></tr></thead>
+    <tbody>
+      {% for t in techs %}
+      <tr>
+        <td>{{ t.name }}</td>
+        <td>{{ t.truck_id }}</td>
+        <td>
+          {% if t.pwa_token_hash %}
+            <span class="status-badge status-ok">token set</span>
+            <details class="pwa-link-details" style="margin-top:0.4rem">
+              <summary class="btn btn-secondary btn-sm" style="cursor:pointer;list-style:none;padding:0.25rem 0.6rem;display:inline-block">Link</summary>
+              <div style="margin-top:0.5rem;max-width:300px">
+                {% if t.pwa_token %}
+                  <div class="text-sm text-muted" style="margin-bottom:0.35rem">Install link (current, not revoked):</div>
+                  <code class="pwa-link-code" id="link-{{ t.id }}" style="word-break:break-all;font-size:11px;line-height:1.4;display:block;padding:0.4rem 0.5rem;border:1px solid var(--color-border);border-radius:8px;background:var(--color-surface-muted, rgba(128,128,128,0.08))">{{ request.base_url }}tech/pwa/?t={{ t.pwa_token }}</code>
+                  <button type="button" class="btn btn-sm" onclick="copyLink('{{ t.id }}', this)" style="margin-top:0.4rem;padding:0.25rem 0.6rem">Copy link</button>
+                {% else %}
+                  <div class="text-sm" style="color:var(--color-warn, #b58900)">This token was created before links became viewable — press <strong>PWA link</strong> to regenerate and show it.</div>
+                {% endif %}
+              </div>
+            </details>
+          {% else %}
+            <span class="status-badge">no token</span>
+          {% endif %}
+        </td>
+        <td>
+          <div style="display:flex;gap:0.75rem;align-items:center">
+            <details>
+              <summary class="btn btn-secondary btn-sm" style="cursor:pointer;list-style:none;padding:0.3rem 0.7rem;min-width:3.5rem;text-align:center;border:1px solid var(--color-border)">Edit</summary>
+              <form method="post" action="/dashboard/techs/update" class="flex gap-sm mt-sm" style="flex-wrap:wrap">
+                <input type="hidden" name="tech_id" value="{{ t.id }}">
+                <input type="text" name="name" value="{{ t.name }}" style="width:auto;max-width:160px">
+                <select name="truck_id" style="width:auto;max-width:160px">
+                  {% for tr in trucks %}<option value="{{ tr.id }}" {% if tr.id == t.truck_id %}selected{% endif %}>{{ tr.name }} — {{ tr.warehouse_name }}</option>{% endfor %}
+                </select>
+                <button type="submit" class="btn btn-primary btn-sm">Save</button>
+              </form>
+            </details>
+            <button type="button" class="btn btn-primary btn-sm" title="Generate/rotate PWA install link" data-techid="{{ t.id }}" data-techname="{{ t.name|e }}" onclick="pwaAction(this)" style="padding:0.3rem 0.7rem;min-width:3.5rem;text-align:center;border:1px solid oklch(0.65 0.2 200 / 0.4)">PWA link</button>
+            {% if t.pwa_token_hash %}
+            <button type="button" class="btn btn-sm" title="Revoke PWA token" data-techid="{{ t.id }}" data-techname="{{ t.name|e }}" onclick="pwaAction(this)" style="padding:0.3rem 0.7rem;min-width:3.5rem;text-align:center;border:1px solid oklch(0.55 0.18 30 / 0.3)">Revoke</button>
+            {% endif %}
+            <form method="post" action="/dashboard/techs/deactivate" onsubmit="return confirm('Deactivate {{ t.name }}?')">
+              <input type="hidden" name="tech_id" value="{{ t.id }}">
+              <button type="submit" class="btn btn-danger btn-sm" style="padding:0.3rem 0.7rem;min-width:3.5rem;text-align:center;border:1px solid oklch(0.55 0.18 30 / 0.3)">Delete</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="two-col">
+  <div class="form-card">
+    <h3>Create Tech</h3>
+    <form method="post" action="/dashboard/techs/create">
+      <label>Name</label>
+      <input type="text" name="name" required>
+      <div class="form-row" style="margin-top:var(--space-md)">
+        <div>
+          <label>Truck</label>
+          <select name="truck_id">
+            <option value="">— Select truck —</option>
+            {% for t in trucks %}<option value="{{ t.id }}">{{ t.name }} — {{ t.warehouse_name }}</option>{% endfor %}
+          </select>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary mt-md">Create Tech</button>
+    </form>
+  </div>
+</div>
+<script>
+async function pwaAction(btn) {
+  const techId = btn.getAttribute('data-techid');
+  const name = btn.getAttribute('data-techname');
+  const action = btn.textContent.trim().toLowerCase().includes('revoke') ? 'clear' : 'rotate';
+  const ok = action === 'clear'
+    ? confirm('Revoke the PWA token for ' + name + '?')
+    : confirm('Generate a new PWA install link for ' + name + '? This revokes the previous one.');
+  if (!ok) return;
+  btn.disabled = true;
+  try {
+    const resp = await fetch('/dashboard/techs/pwa/' + action, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: 'tech_id=' + encodeURIComponent(techId),
+    });
+    if (!resp.ok) { alert('Request failed (' + resp.status + ')'); btn.disabled = false; return; }
+    location.reload();
+  } catch (e) {
+    alert('Request failed — check connection.');
+    btn.disabled = false;
+  }
+}
+function copyLink(techId, btn) {
+  const code = document.getElementById('link-' + techId);
+  const text = code.textContent.trim();
+  const done = () => {
+    const old = btn.textContent;
+    btn.textContent = 'Copied ✓';
+    setTimeout(() => (btn.textContent = old), 1400);
+  };
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(done).catch(() => { fallbackCopy(code); done(); });
+  } else {
+    fallbackCopy(code);
+    done();
+  }
+}
+function fallbackCopy(code) {
+  const range = document.createRange();
+  range.selectNodeContents(code);
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+  document.execCommand('copy');
+  sel.removeAllRanges();
+}
+</script>
+{% endblock %}

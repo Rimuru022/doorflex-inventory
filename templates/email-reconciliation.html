@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  body { font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; color: #1a1a1a; margin: 0; padding: 0; background: #f5f2ec; }
+  .wrap { max-width: 680px; margin: 0 auto; padding: 24px 16px; }
+  .card { background: #ffffff; border-radius: 10px; padding: 20px 24px; margin-bottom: 14px; border: 1px solid #e6dfd2; }
+  h1 { font-size: 19px; margin: 0 0 4px; }
+  .sub { color: #666; font-size: 13px; margin-bottom: 4px; }
+  h2 { font-size: 14px; margin: 0 0 8px; }
+  ul { margin: 0; padding-left: 18px; font-size: 13px; }
+  li { padding: 3px 0; }
+  .muted { color: #888; font-size: 12px; }
+  .matched h2 { color: #1a7a3a; }
+  .not_collected h2 { color: #b45309; }
+  .uncaptured h2 { color: #c0392b; }
+  .removed h2 { color: #7a1f14; }
+  footer { color: #999; font-size: 12px; text-align: center; padding: 8px 0 20px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>Daily job reconciliation — {{ date_label }}</h1>
+    <div class="sub">Independent evidence record vs. what was expected today</div>
+  </div>
+
+  <div class="card matched">
+    <h2>✅ Captured ({{ result.matched|length }})</h2>
+    {% if result.matched %}
+    <ul>{% for j in result.matched %}<li>WO# {{ j.wo_number }}{% if j.address %} — {{ j.address }}{% endif %}</li>{% endfor %}</ul>
+    {% else %}<div class="muted">None</div>{% endif %}
+  </div>
+
+  <div class="card not_collected">
+    <h2>⚠️ Not collected ({{ result.not_collected|length }})</h2>
+    {% if result.not_collected %}
+    <ul>{% for j in result.not_collected %}<li>WO# {{ j.wo_number }}{% if j.address %} — {{ j.address }}{% endif %}</li>{% endfor %}</ul>
+    {% else %}<div class="muted">None — follow up needed on these</div>{% endif %}
+  </div>
+
+  <div class="card uncaptured">
+    <h2>❌ Not captured ({{ result.uncaptured|length }})</h2>
+    {% if result.uncaptured %}
+    <ul>{% for j in result.uncaptured %}<li>WO# {{ j.wo_number }}{% if j.address %} — {{ j.address }}{% else %} — (no address on file){% endif %}</li>{% endfor %}</ul>
+    {% else %}<div class="muted">None — tech did not close these in the PWA</div>{% endif %}
+  </div>
+
+  <div class="card removed">
+    <h2>🚨 Removed by Dispatch ({{ result.removed|length }})</h2>
+    {% if result.removed %}
+    <ul>{% for j in result.removed %}<li>WO# {{ j.wo_number }} — evidence packet available in Dispute Center</li>{% endfor %}</ul>
+    {% else %}<div class="muted">None</div>{% endif %}
+  </div>
+
+  <footer>Generated automatically by DoorFlex Inventory. Internal use only.</footer>
+</div>
+</body>
+</html>

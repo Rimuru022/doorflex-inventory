@@ -1,0 +1,25 @@
+{% extends "owner_base.html" %}
+{% block title %}Dev Tools{% endblock %}
+{% set active_page = "dev" %}
+{% block content %}
+<div class="section">
+  <div class="section-header"><h2>Dev Tools</h2></div>
+  <p class="text-sm text-muted" style="margin-bottom:var(--space-md)">
+    Temporary tools for testing.
+  </p>
+
+  <div class="form-card" style="max-width:600px;border:1px solid oklch(0.55 0.18 30 / 0.3)">
+    <h3>Reset Database</h3>
+    <p class="text-sm text-muted" style="margin-top:var(--space-sm)">
+      Wipes <strong>all</strong> data (log, stock, alerts, unmatched, packages, techs, parts, trucks, warehouses) and re-seeds defaults (2 warehouses, 2 trucks).
+      An automatic backup is created before the reset.
+    </p>
+    <form method="post" action="{{ admin_path }}/dev/reset" class="mt-md"
+          onsubmit="return confirm('WARNING: This wipes ALL data and re-seeds defaults. A backup is saved first. Continue?')">
+      <label>Type <strong>RESET</strong> to confirm</label>
+      <input type="text" name="confirm" placeholder="RESET" autocomplete="off">
+      <button type="submit" class="btn btn-danger mt-md">Wipe All Data &amp; Reset</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

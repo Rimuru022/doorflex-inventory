@@ -1,0 +1,51 @@
+{% extends "dashboard_base.html" %}
+{% block title %}Log{% endblock %}
+{% set active_page = "log" %}
+{% block content %}
+<div class="section">
+  <div class="section-header"><h2>Transaction Log</h2></div>
+  <details style="margin-bottom:var(--space-md)">
+    <summary class="text-sm" style="cursor:pointer;color:var(--color-accent)">Filters</summary>
+    <form method="get" action="/dashboard/log" class="form-card mt-sm">
+      <div class="form-row">
+        <div><label>Tech</label><input type="text" name="tech_name" value="{{ request.query_params.get('tech_name', '') }}"></div>
+        <div><label>Truck</label><input type="text" name="truck_id" value="{{ request.query_params.get('truck_id', '') }}"></div>
+        <div><label>Part</label><input type="text" name="part_id" value="{{ request.query_params.get('part_id', '') }}"></div>
+        <div><label>Source</label><select name="source"><option value="">All</option>
+          <option value="email" {% if request.query_params.get('source') == 'email' %}selected{% endif %}>Email</option>
+          <option value="restock" {% if request.query_params.get('source') == 'restock' %}selected{% endif %}>Restock</option>
+          <option value="manual_adjustment" {% if request.query_params.get('source') == 'manual_adjustment' %}selected{% endif %}>Adjust</option>
+          <option value="pwa" {% if request.query_params.get('source') == 'pwa' %}selected{% endif %}>PWA</option>
+        </select></div>
+        <div><label>From</label><input type="date" name="date_from"></div>
+        <div><label>To</label><input type="date" name="date_to"></div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm">Apply Filters</button>
+    </form>
+  </details>
+  <div class="search-field"><input type="text" id="log_search" placeholder="Search log entries..." oninput="filterTable('log_search', 'log_table')"></div>
+  <table id="log_table">
+    <thead><tr><th>Time</th><th>Tech</th><th>Truck</th><th>Warehouse</th><th>Part</th><th>Raw</th><th>Change</th><th>Before</th><th>After</th><th>Invoice</th><th>Source</th></tr></thead>
+      <tbody>
+        {% for entry in log %}
+        <tr>
+          <td class="text-xs text-muted">{{ entry.timestamp }}</td>
+          <td>{{ entry.tech_name }}</td>
+          <td>{{ entry.truck_id }}</td>
+          <td class="text-sm">{{ wh_names.get(entry.warehouse_id, entry.warehouse_id) }}</td>
+          <td>{{ entry.part_id }}</td>
+          <td class="text-xs text-muted">{% if entry.raw_text %}{{ entry.raw_text }}{% else %}—{% endif %}</td>
+          <td style="color:{% if entry.quantity_change < 0 %}var(--color-danger){% else %}var(--color-success){% endif %}">{{ entry.quantity_change }}</td>
+          <td>{{ entry.stock_before }}</td>
+          <td>{{ entry.stock_after }}</td>
+          <td class="text-xs text-muted truncate" style="max-width:100px">{{ entry.invoice_id }}</td>
+          <td class="text-sm">
+            {% if entry.source == 'pwa' %}<span style="display:inline-block;padding:0.1rem 0.5rem;border-radius:999px;background:oklch(0.9 0.12 255 / 0.35);color:oklch(0.45 0.16 255);font-weight:600">{{ entry.source }}</span>
+            {% else %}{{ entry.source }}{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,51 @@
+<style>
+/* Subtle motion layer. Short, ease-out, never blocks input; everything is
+   dropped under prefers-reduced-motion. Content is visible without JS. */
+:root{--ease-out:cubic-bezier(0.22,1,0.36,1);--dur-fast:140ms;--dur:260ms}
+@keyframes rise-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes fade-in{from{opacity:0}to{opacity:1}}
+@keyframes drop-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes flash-in{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.main>.section,.main>.summary-grid,.main>h1,.main>h2,.main>.page-header{animation:rise-in var(--dur) var(--ease-out) both}
+.main>:nth-child(2){animation-delay:40ms}.main>:nth-child(3){animation-delay:80ms}
+.main>:nth-child(4){animation-delay:120ms}.main>:nth-child(n+5){animation-delay:160ms}
+.summary-card{animation:rise-in var(--dur) var(--ease-out) both;transition:transform var(--dur-fast) var(--ease-out),box-shadow var(--dur-fast) var(--ease-out),border-color var(--dur-fast)}
+.summary-card:nth-child(2){animation-delay:30ms}.summary-card:nth-child(3){animation-delay:60ms}
+.summary-card:nth-child(4){animation-delay:90ms}.summary-card:nth-child(5){animation-delay:120ms}
+.summary-card:nth-child(6){animation-delay:150ms}.summary-card:nth-child(n+7){animation-delay:180ms}
+.summary-card:hover{transform:translateY(-2px);box-shadow:0 6px 18px oklch(0.15 0.01 50 / 0.08)}
+.nav-group.open>.nav-dropdown{animation:drop-in var(--dur-fast) var(--ease-out)}
+@media (hover:hover) and (pointer:fine){.nav-group:hover>.nav-dropdown{animation:drop-in var(--dur-fast) var(--ease-out)}}
+.flash{animation:flash-in var(--dur) var(--ease-out) both}
+.btn{transition:background var(--dur-fast),color var(--dur-fast),transform 90ms var(--ease-out),box-shadow var(--dur-fast)}
+.btn:active{transform:translateY(1px)}
+tbody tr.row-in{animation:fade-in 220ms var(--ease-out) both}
+.demo-bar{animation:fade-in var(--dur) var(--ease-out) both}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
+</style>
+<script>
+/* Count-up for the KPI cards (numbers only) and a light stagger on the first
+   rows of each table. Runs once per page load. */
+(function(){
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  document.addEventListener('DOMContentLoaded', function(){
+    document.querySelectorAll('.summary-card .value').forEach(function(el){
+      var raw = el.textContent.trim();
+      if (!/^\d{1,6}$/.test(raw)) return;
+      var end = parseInt(raw, 10); if (end < 2) return;
+      var t0 = null, dur = 520;
+      el.textContent = '0';
+      function step(t){ if(!t0) t0 = t; var p = Math.min((t - t0) / dur, 1);
+        el.textContent = Math.round(end * (1 - Math.pow(1 - p, 3))); if (p < 1) requestAnimationFrame(step); }
+      requestAnimationFrame(step);
+    });
+    document.querySelectorAll('table tbody').forEach(function(tb){
+      Array.prototype.slice.call(tb.rows, 0, 14).forEach(function(r, i){
+        r.style.animationDelay = (i * 18) + 'ms'; r.classList.add('row-in');
+      });
+    });
+  });
+})();
+</script>

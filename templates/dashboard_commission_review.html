@@ -1,0 +1,115 @@
+{% extends "dashboard_base.html" %}
+{% block title %}{% if report.status == 'confirmed' %}Report{% else %}Review Report{% endif %}{% endblock %}
+{% set active_page = "commission" %}
+{% block content %}
+{% if report.status == 'confirmed' %}
+<div class="section">
+  <div class="section-header"><h2>✅ Confirmed Report <span class="count">#{{ report.id }} — {{ report.period_start }}{% if report.period_end %} – {{ report.period_end }}{% endif %}</span></h2></div>
+  <p class="text-sm text-muted" style="margin-bottom:var(--space-md)">This is exactly what was saved — sourced from the database, not the original AI parse.</p>
+  <table>
+    <thead><tr><th>Date</th><th>WO#</th><th>Total Sales</th><th>Payout</th><th>Commission</th><th>Notes</th></tr></thead>
+    <tbody>
+      {% for j in confirmed_jobs %}
+      <tr>
+        <td>{{ j.report_date }}</td>
+        <td>{{ j.wo_number }}</td>
+        <td>{% if j.total_sales is not none %}${{ "{:,.2f}".format(j.total_sales) }}{% else %}—{% endif %}</td>
+        <td>{% if j.payout is not none %}${{ "{:,.2f}".format(j.payout) }}{% else %}—{% endif %}</td>
+        <td>{% if j.commission is not none %}${{ "{:,.2f}".format(j.commission) }}{% else %}—{% endif %}</td>
+        <td>{{ j.notes }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p style="margin-top:var(--space-md)">
+    Sum commission: <strong>${{ "{:,.2f}".format(commission.job_commission_sum) }}</strong> −
+    Parts deduction: <strong>${{ "{:,.2f}".format(commission.parts_deduction) }}</strong> =
+    Net: <strong>${{ "{:,.2f}".format(commission.computed_net) }}</strong>
+    {% if commission.mismatch %}<span style="color:var(--color-danger)"> ⚠ doesn't match Winston's stated total (${{ "{:,.2f}".format(commission.stated_total) }})</span>{% endif %}
+  </p>
+</div>
+
+<div class="section">
+  <div class="section-header"><h2>Reconciliation</h2></div>
+  <div class="two-col">
+    <div><h3>✅ Matched ({{ result.matched|length }})</h3><p class="text-sm text-muted">In both Winston's report and our captures.</p></div>
+    <div><h3>❓ Winston Only ({{ result.winston_only|length }})</h3><p class="text-sm text-muted">Winston paid for these — no matching capture on file. Possibly a late/uncaptured job.</p></div>
+    <div><h3>⏳ Captured, Not Yet Reported ({{ result.captured_not_reported|length }})</h3><p class="text-sm text-muted">We captured these — Winston hasn't paid yet. Rechecked automatically on the next report.</p></div>
+    <div><h3>🚨 Disputes ({{ result.disputes|length }})</h3><p class="text-sm text-muted">Captured, marked removed by Dispatch, not in Winston's report. <a href="/dashboard/disputes">View Dispute Center →</a></p></div>
+  </div>
+</div>
+{% else %}
+<div class="section">
+  <div class="section-header"><h2>Review Winston Report <span class="count">draft #{{ report.id }}</span></h2></div>
+  <p class="text-sm text-muted" style="margin-bottom:var(--space-md)">
+    Vision AI read this photo — check every field against the image before confirming. Nothing is saved until you confirm.
+    Fix anything that looks wrong directly in the table below.
+  </p>
+
+  {% if duplicate_report %}
+  <div class="flash flash-warning" style="margin-bottom:var(--space-md)">
+    <strong>⚠️ Possible duplicate</strong> A confirmed report already covers {{ duplicate_report.period_start }} – {{ duplicate_report.period_end }}, which overlaps this one.
+    Winston can report jobs late, so this may be legitimate — just worth a second look before confirming.
+  </div>
+  {% endif %}
+
+  {% for w in report_level_warnings %}
+  <div class="flash flash-warning" style="margin-bottom:var(--space-sm)">⚠️ {{ w.message }}</div>
+  {% endfor %}
+</div>
+
+<div class="two-col" style="align-items:flex-start">
+  <div class="section">
+    <div class="section-header"><h2>Original Photo</h2></div>
+    <img src="/dashboard/winston-reports/{{ report.raw_image_path }}" alt="Winston report" style="max-width:100%;border-radius:8px;border:1px solid var(--color-border)">
+  </div>
+
+  <div class="section">
+    <form method="post" action="/dashboard/commission/confirm/{{ report.id }}">
+      <div class="form-row">
+        <div><label>Tech</label><input type="text" name="tech_name" value="{{ parsed.tech_name or '' }}"></div>
+      </div>
+      <div class="form-row" style="margin-top:var(--space-sm)">
+        <div><label>Period start</label><input type="date" name="period_start" value="{{ parsed.period_start or '' }}"></div>
+        <div><label>Period end</label><input type="date" name="period_end" value="{{ parsed.period_end or '' }}"></div>
+      </div>
+      <div class="form-row" style="margin-top:var(--space-sm)">
+        <div><label>Subtotal sales</label><input type="number" step="0.01" name="subtotal_sales" value="{{ parsed.subtotal_sales if parsed.subtotal_sales is not none else '' }}"></div>
+        <div><label>Subtotal payout</label><input type="number" step="0.01" name="subtotal_payout" value="{{ parsed.subtotal_payout if parsed.subtotal_payout is not none else '' }}"></div>
+      </div>
+      <div class="form-row" style="margin-top:var(--space-sm)">
+        <div><label>Parts deduction</label><input type="number" step="0.01" name="parts_deduction" value="{{ parsed.parts_deduction if parsed.parts_deduction is not none else '' }}"></div>
+        <div><label>Total commission</label><input type="number" step="0.01" name="total_commission" value="{{ parsed.total_commission if parsed.total_commission is not none else '' }}"></div>
+      </div>
+
+      <h3 style="margin-top:var(--space-lg)">Jobs <span class="count">{{ jobs|length }}</span></h3>
+      <input type="hidden" name="row_count" value="{{ jobs|length }}">
+      <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>Date</th><th>WO#</th><th>Total Sales</th><th>Payout</th><th>Commission</th><th>Notes</th></tr></thead>
+        <tbody>
+          {% for j in jobs %}
+          <tr>
+            <td><input type="text" name="row-{{ loop.index0 }}-date" value="{{ j.date or '' }}" style="width:100px"></td>
+            <td>
+              <input type="text" name="row-{{ loop.index0 }}-wo_number" value="{{ j.wo_number or '' }}" style="width:120px{% if loop.index0 in warnings_by_row %};border:2px solid var(--color-danger){% endif %}">
+              {% if loop.index0 in warnings_by_row %}
+                {% for w in warnings_by_row[loop.index0] %}<div class="text-xs" style="color:var(--color-danger)">⚠ {{ w.message }}</div>{% endfor %}
+              {% endif %}
+            </td>
+            <td><input type="number" step="0.01" name="row-{{ loop.index0 }}-total_sales" value="{{ j.total_sales if j.total_sales is not none else '' }}" style="width:100px"></td>
+            <td><input type="number" step="0.01" name="row-{{ loop.index0 }}-payout" value="{{ j.payout if j.payout is not none else '' }}" style="width:100px"></td>
+            <td><input type="number" step="0.01" name="row-{{ loop.index0 }}-commission" value="{{ j.commission if j.commission is not none else '' }}" style="width:100px"></td>
+            <td><input type="text" name="row-{{ loop.index0 }}-notes" value="{{ j.notes or '' }}" style="width:160px"></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      </div>
+
+      <button type="submit" class="btn btn-primary mt-md">✓ Confirm &amp; Save</button>
+    </form>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

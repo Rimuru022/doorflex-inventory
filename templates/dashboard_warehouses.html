@@ -1,0 +1,48 @@
+{% extends "dashboard_base.html" %}
+{% block title %}Warehouses{% endblock %}
+{% set active_page = "warehouses" %}
+{% block content %}
+<div class="section">
+  <div class="section-header"><h2>Warehouses <span class="count">{{ warehouses|length }}</span></h2></div>
+  <table>
+    <thead><tr><th>Name</th><th>ID</th><th>Trucks</th><th>Parts in Stock</th><th style="width:220px"></th></tr></thead>
+    <tbody>
+      {% for w in warehouses %}
+      <tr>
+        <td>{{ w.name }}</td>
+        <td class="text-muted text-xs">{{ w.id }}</td>
+        <td>{{ w.truck_count }}</td>
+        <td>{{ w.part_count }}</td>
+        <td>
+          <div style="display:flex;gap:0.75rem;align-items:center">
+            <details>
+              <summary class="btn btn-secondary btn-sm" style="cursor:pointer;list-style:none;padding:0.3rem 0.7rem;min-width:3.5rem;text-align:center;border:1px solid var(--color-border)">Rename</summary>
+              <form method="post" action="/dashboard/warehouses/update" class="flex gap-sm mt-sm" style="flex-wrap:wrap">
+                <input type="hidden" name="warehouse_id" value="{{ w.id }}">
+                <input type="text" name="name" value="{{ w.name }}" style="width:200px" required>
+                <button type="submit" class="btn btn-primary btn-sm">Save</button>
+              </form>
+            </details>
+            <form method="post" action="/dashboard/warehouses/delete" onsubmit="return confirm('Delete warehouse {{ w.name }}? Its stock entries will be removed and it will disappear from all views.')">
+              <input type="hidden" name="warehouse_id" value="{{ w.id }}">
+              <button type="submit" class="btn btn-danger btn-sm" style="padding:0.3rem 0.7rem;min-width:3.5rem;text-align:center;border:1px solid oklch(0.55 0.18 30 / 0.3)">Delete</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<div class="two-col">
+  <div class="form-card">
+    <h3>Create Warehouse</h3>
+    <form method="post" action="/dashboard/warehouses/create">
+      <label>Name</label>
+      <input type="text" name="name" placeholder="e.g. Mesa Warehouse" required>
+      <p class="text-xs text-muted mt-sm">A warehouse is an inventory location. Trucks and parts can be assigned to it, and its usage shows up on the dashboard.</p>
+      <button type="submit" class="btn btn-primary mt-md">Create Warehouse</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

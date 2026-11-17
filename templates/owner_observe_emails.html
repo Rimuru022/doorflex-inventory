@@ -1,0 +1,123 @@
+{% extends "owner_base.html" %}
+{% block title %}Emails{% endblock %}
+{% block content %}
+
+<style>
+.section {
+  background: #fff;
+  border: 1px solid #e6dfd2;
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin-bottom: 18px;
+}
+.section h2 { margin: 0 0 12px; font-size: 15px; color: #9a5a1f; text-transform: uppercase; letter-spacing: 0.04em; }
+.filter-form { display: flex; gap: 8px; flex-wrap: wrap; align-items: end; margin-bottom: 14px; }
+.filter-form label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: #555; display: block; }
+.filter-form select {
+  padding: 5px 8px; font-size: 13px; border: 1px solid #d8c9a8; border-radius: 5px; background: #fcf9f2;
+}
+.filter-form button {
+  padding: 6px 12px; background: #9a5a1f; color: #fff; border: 0; border-radius: 5px; font-weight: 600; cursor: pointer;
+}
+.filter-form a { font-size: 12px; color: #007185; text-decoration: none; }
+.tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+.tbl th { text-align: left; background: #f3efe7; padding: 6px 10px; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.04em; color: #555; }
+.tbl td { padding: 5px 10px; border-bottom: 1px solid #eee6d8; vertical-align: top; }
+.tbl tr.is-error td { background: #fdf2ef; }
+.status {
+  display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 11px; font-weight: 700;
+}
+.status-sent { background: #e7f3ef; color: #1e6b54; }
+.status-failed { background: #f6cfca; color: #8b1a13; }
+.tz-line { display: flex; flex-direction: column; font-size: 11px; line-height: 1.35; }
+.tz-line .az { font-weight: 600; }
+.tz-line .cmx { color: #9a5a1f; }
+.resp-pre { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10.5px; white-space: pre-wrap; word-break: break-word; background: #faf6ed; padding: 4px 6px; border-radius: 4px; max-width: 360px; max-height: 100px; overflow: auto; }
+.pager { margin-top: 12px; display: flex; gap: 12px; align-items: center; font-size: 12px; }
+.pager a { color: #007185; text-decoration: none; font-weight: 600; }
+</style>
+
+<div style="margin-bottom: 16px;">
+  <h1 style="margin:0 0 4px;font-size:20px;">Emails</h1>
+  <div style="color:#888;font-size:12px;">
+    <a href="{{ admin_path }}/observe">← Dashboard</a>
+    · every automated email (reorders, weekly summary, alert, monthly PDF, failure notifications).
+  </div>
+</div>
+
+<div class="section">
+  <h2>Filters</h2>
+  <form method="get" class="filter-form">
+    <div>
+      <label>Status</label>
+      <select name="status">
+        <option value="">— any —</option>
+        <option value="sent" {% if filters.status == 'sent' %}selected{% endif %}>sent</option>
+        <option value="failed" {% if filters.status == 'failed' %}selected{% endif %}>failed</option>
+      </select>
+    </div>
+    <div>
+      <label>Type</label>
+      <select name="email_type">
+        <option value="">— any —</option>
+        {% for t in type_options %}
+          <option value="{{ t }}" {% if filters.email_type == t %}selected{% endif %}>{{ t }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div><button type="submit">Filter</button></div>
+    <div><a href="{{ admin_path }}/observe/emails">Clear</a></div>
+  </form>
+</div>
+
+<div class="section">
+  <h2>{{ total }} email{{ '' if total == 1 else 's' }}</h2>
+  {% if rows %}
+  <table class="tbl">
+    <thead>
+      <tr>
+        <th style="width:18%">When (AZ / CDMX)</th>
+        <th style="width:60px">Status</th>
+        <th style="width:90px">Type</th>
+        <th>Subject</th>
+        <th style="width:160px">To</th>
+        <th style="width:60px">Tries</th>
+        <th>Response / Error</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr class="{{ 'is-error' if r.status == 'failed' else '' }}">
+        <td>
+          <div class="tz-line">
+            <span class="az">{{ r.created_at|dualtz_date }} {{ r.created_at|dualtz_az }} AZ</span>
+            <span class="cmx">{{ r.created_at|dualtz_cmx }} CDMX</span>
+          </div>
+        </td>
+        <td><span class="status status-{{ r.status }}">{{ r.status }}</span></td>
+        <td><code style="font-size:11px;">{{ r.email_type }}</code></td>
+        <td>{{ r.subject }}</td>
+        <td><code style="font-size:11px;">{{ r.to_address }}</code></td>
+        <td>{{ r.attempts }}</td>
+        <td>
+          {% if r.response %}
+            <pre class="resp-pre">{{ r.response }}</pre>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if total > limit %}
+  <div class="pager">
+    {% if offset > 0 %}<a href="?status={{ filters.status }}&email_type={{ filters.email_type }}&offset={{ offset - limit }}&limit={{ limit }}">← Previous</a>{% endif %}
+    <span>Showing {{ offset + 1 }}–{{ [offset + limit, total]|min }} of {{ total }}</span>
+    {% if offset + limit < total %}<a href="?status={{ filters.status }}&email_type={{ filters.email_type }}&offset={{ offset + limit }}&limit={{ limit }}">Next →</a>{% endif %}
+  </div>
+  {% endif %}
+  {% else %}
+  <div style="color:#888;font-style:italic;font-size:13px;">No emails sent yet.</div>
+  {% endif %}
+</div>
+
+{% endblock %}

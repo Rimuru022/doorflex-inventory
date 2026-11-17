@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  body { font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; color: #1a1a1a; margin: 0; padding: 0; background: #f5f2ec; }
+  .wrap { max-width: 680px; margin: 0 auto; padding: 24px 16px; }
+  .card { background: #ffffff; border-radius: 10px; padding: 20px 24px; margin-bottom: 18px; border: 1px solid #e6dfd2; }
+  h1 { font-size: 19px; margin: 0 0 4px; }
+  .sub { color: #666; font-size: 13px; margin-bottom: 14px; }
+  h2 { font-size: 14px; margin: 0 0 8px; color: #9a5a1f; text-transform: uppercase; letter-spacing: 0.04em; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; background: #f3efe7; padding: 6px 8px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: #555; }
+  td { padding: 6px 8px; border-bottom: 1px solid #eee6d8; }
+  .qty { font-weight: 600; }
+  .muted { color: #888; }
+  .amazon a { color: #007185; }
+  footer { color: #999; font-size: 12px; text-align: center; padding: 8px 0 20px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>DoorFlex Inventory — Weekly Order Summary</h1>
+    <div class="sub">{{ date_label }}</div>
+  </div>
+
+  {% if reorders %}
+  <div class="card">
+    <h2>Orders sent to distributors</h2>
+    <table>
+      <thead><tr><th>Distributor</th><th>Email</th><th>Items</th><th>Total Qty</th></tr></thead>
+      <tbody>
+        {% for r in reorders %}
+        <tr>
+          <td><strong>{{ labels.get(r.distributor_id, r.distributor_name) }}</strong></td>
+          <td class="muted">{{ r.email }}</td>
+          <td>{% for it in r['items'] %}{{ it.part_name }}{% if not loop.last %}, {% endif %}{% endfor %}</td>
+          <td class="qty">{{ r['items']|sum(attribute='qty') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  {% if amazon_items %}
+  <div class="card">
+    <h2>Amazon purchases needed (manual)</h2>
+    <table>
+      <thead><tr><th>Product</th><th>Qty</th><th>Link</th></tr></thead>
+      <tbody>
+        {% for it in amazon_items %}
+        <tr>
+          <td>{{ it.part_name }} <span class="muted">({{ it.sku }})</span></td>
+          <td class="qty">{{ it.qty }}</td>
+          <td class="amazon">{% if it.amazon_url %}<a href="{{ it.amazon_url }}">Open on Amazon</a>{% else %}—{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  {% if unassigned %}
+  <div class="card">
+    <h2>Low stock without a distributor (no order sent)</h2>
+    <table>
+      <thead><tr><th>SKU</th><th>Name</th><th>Stock</th><th>Min</th></tr></thead>
+      <tbody>
+        {% for it in unassigned %}
+        <tr>
+          <td><strong>{{ it.sku }}</strong></td>
+          <td>{{ it.part_name }}</td>
+          <td class="qty">{{ it.current }}</td>
+          <td>{{ it.min }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  {% if not reorders and not amazon_items and not unassigned %}
+  <div class="card"><div class="muted">No low-stock items this week.</div></div>
+  {% endif %}
+  <footer>Generated automatically by DoorFlex Inventory. Internal use only.</footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,63 @@
+{% extends "dashboard_base.html" %}
+{% block title %}Commission{% endblock %}
+{% set active_page = "commission" %}
+{% block content %}
+
+{% if drafts %}
+<div class="section">
+  <div class="section-header"><h2>⏳ Pending Review <span class="count">{{ drafts|length }}</span></h2></div>
+  <p class="text-sm text-muted" style="margin-bottom:var(--space-md)">Uploaded but not yet confirmed — nothing here counts toward commission totals until reviewed.</p>
+  <table>
+    <thead><tr><th>Uploaded</th><th>Tech</th><th>Period</th><th></th></tr></thead>
+    <tbody>
+      {% for d in drafts %}
+      <tr>
+        <td class="text-xs text-muted">{{ d.received_at }}</td>
+        <td>{{ d.tech_name or '—' }}</td>
+        <td>{{ d.period_start }}{% if d.period_end %} – {{ d.period_end }}{% endif %}</td>
+        <td><a href="/dashboard/commission/review/{{ d.id }}" class="btn btn-primary btn-sm">Review</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<div class="section">
+  <div class="section-header"><h2>📊 Weekly Commission <span class="count">{{ confirmed|length }} confirmed</span></h2></div>
+  <p class="text-sm text-muted" style="margin-bottom:var(--space-md)">
+    Winston's commission column is authoritative — this app never recomputes it, only cross-checks and reconciles against captured jobs.
+  </p>
+  <form method="post" action="/dashboard/commission/upload" enctype="multipart/form-data" class="flex gap-sm" style="margin-bottom:var(--space-lg);align-items:flex-end">
+    <div>
+      <label>Winston report photo</label>
+      <input type="file" name="file" accept="image/*" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Upload &amp; Parse</button>
+  </form>
+
+  {% if confirmed %}
+  <table>
+    <thead><tr><th>Period</th><th>Tech</th><th>Sum Commission</th><th>Parts Deduction</th><th>Net</th><th>Stated Total</th><th></th></tr></thead>
+    <tbody>
+      {% for c in confirmed %}
+      <tr>
+        <td><a href="/dashboard/commission/review/{{ c.report.id }}">{{ c.report.period_start }}{% if c.report.period_end %} – {{ c.report.period_end }}{% endif %}</a></td>
+        <td>{{ c.report.tech_name or '—' }}</td>
+        <td>${{ "{:,.2f}".format(c.commission.job_commission_sum) }}</td>
+        <td>${{ "{:,.2f}".format(c.commission.parts_deduction) }}</td>
+        <td><strong>${{ "{:,.2f}".format(c.commission.computed_net) }}</strong></td>
+        <td>
+          {% if c.commission.stated_total is not none %}${{ "{:,.2f}".format(c.commission.stated_total) }}{% else %}—{% endif %}
+          {% if c.commission.mismatch %}<br><span class="text-xs" style="color:var(--color-danger)">⚠ doesn't match sum</span>{% endif %}
+        </td>
+        <td><a href="/dashboard/commission/export.csv?report_id={{ c.report.id }}" class="btn btn-secondary btn-sm">Export CSV</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="text-muted">No confirmed reports yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,470 @@
+{% extends "owner_base.html" %}
+{% block title %}Observar{% endblock %}
+{% block content %}
+
+<style>
+.obs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  margin-bottom: 22px;
+}
+.obs-card {
+  background: #fff;
+  border: 1px solid #e6dfd2;
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.obs-card .label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #8a7a5a;
+}
+.obs-card .value {
+  font-size: 26px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-top: 4px;
+}
+.obs-card .sub {
+  font-size: 11px;
+  color: #888;
+  margin-top: 2px;
+}
+.obs-card.err { border-color: #f1c5bf; background: #fdf2ef; }
+.obs-card.err .value { color: #b00020; }
+.obs-card.warn { border-color: #e9d8a6; background: #fef9e7; }
+.obs-card.warn .value { color: #8a5d00; }
+
+.section {
+  background: #fff;
+  border: 1px solid #e6dfd2;
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin-bottom: 18px;
+}
+.section h2 {
+  margin: 0 0 12px;
+  font-size: 15px;
+  color: #9a5a1f;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.toolbar {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.toolbar a {
+  color: #007185;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 13px;
+}
+.toolbar a:hover { text-decoration: underline; }
+
+.filterbar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 12px;
+  background: #faf6ed;
+  border: 1px solid #eee0c8;
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+.filterbar select, .filterbar input[type="text"], .filterbar input[type="number"] {
+  border: 1px solid #d8cbb0;
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 12.5px;
+  background: #fff;
+  color: #333;
+}
+.filterbar label {
+  font-size: 11.5px;
+  color: #8a7a5a;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.filterbar .btn {
+  background: #9a5a1f;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 7px 16px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.filterbar .btn:hover { background: #824a15; }
+.filterbar .btn-ghost {
+  background: transparent;
+  color: #007185;
+  border: 1px solid #007185;
+}
+.filterbar .btn-ghost:hover { background: #e6f4f6; }
+.auto-refresh {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.auto-refresh select { padding: 6px 8px; }
+
+.pager {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-end;
+  font-size: 12.5px;
+  color: #777;
+  margin-top: 10px;
+}
+.pager a {
+  color: #007185;
+  text-decoration: none;
+  font-weight: 600;
+}
+.pager a:hover { text-decoration: underline; }
+
+.tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+.tbl th {
+  text-align: left;
+  background: #f3efe7;
+  padding: 6px 10px;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #555;
+}
+.tbl td {
+  padding: 5px 10px;
+  border-bottom: 1px solid #eee6d8;
+  vertical-align: top;
+}
+.tbl tr.is-error td { background: #fdf2ef; }
+.tbl tr.is-warn td { background: #fef9e7; }
+.lvl {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.lvl-info { background: #e7f3ef; color: #1e6b54; }
+.lvl-warn { background: #fbe5c4; color: #8a5d00; }
+.lvl-error { background: #f6cfca; color: #8b1a13; }
+.src-tag {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+.src-event { background: #e4ecf7; color: #274b77; }
+.src-http  { background: #f3e8f7; color: #6b2b7a; }
+.src-email { background: #fdf0d5; color: #8a5d00; }
+.src-stock { background: #ffe3e0; color: #a02f1f; }
+.scope-tag {
+  font-size: 10.5px;
+  color: #777;
+  background: #f1ecdf;
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+.tz-line { display: flex; flex-direction: column; font-size: 11px; line-height: 1.35; }
+.tz-line .az { font-weight: 600; color: #1a1a1a; }
+.tz-line .cmx { color: #9a5a1f; }
+
+.chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 80px;
+  margin-top: 6px;
+}
+.bar {
+  flex: 1;
+  background: linear-gradient(180deg, #d2a26b, #9a5a1f);
+  border-radius: 3px 3px 0 0;
+  min-height: 4px;
+  position: relative;
+}
+.bar .lbl {
+  position: absolute;
+  bottom: -16px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 10px;
+  color: #888;
+}
+.bar .val {
+  position: absolute;
+  top: -16px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 10px;
+  color: #555;
+}
+.detail-pre {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10.5px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: #faf6ed;
+  padding: 4px 6px;
+  border-radius: 4px;
+  max-width: 360px;
+  max-height: 110px;
+  overflow: auto;
+}
+.detail-toggle {
+  color: #007185;
+  font-size: 11px;
+  cursor: pointer;
+  user-select: none;
+  background: none;
+  border: none;
+  padding: 0;
+  font-weight: 600;
+}
+.detail-toggle:hover { text-decoration: underline; }
+.detail-box { display: none; }
+.updated-line { font-size: 11px; color: #999; margin-left: 8px; }
+.empty-note { color: #888; font-style: italic; font-size: 13px; padding: 14px 0; }
+</style>
+
+<div style="margin-bottom: 18px;">
+  <h1 style="margin:0 0 4px;font-size:20px;">Observar</h1>
+  <div style="color:#888;font-size:12px;">
+    Todos los errores del sistema en un solo lugar: eventos de la app, peticiones
+    HTTP fallidas, correos fallidos y alertas de stock. Times in
+    <b>Arizona (server local)</b> and <b>Mexico City</b>.
+  </div>
+</div>
+
+<div class="obs-grid">
+  <div class="obs-card {{ 'err' if source_counts.event_errors else '' }}">
+    <div class="label">Event errors</div>
+    <div class="value">{{ source_counts.event_errors }}</div>
+    <div class="sub">{{ source_counts.event_warns }} warnings</div>
+  </div>
+  <div class="obs-card {{ 'err' if source_counts.http else '' }}">
+    <div class="label">HTTP ≥ 400</div>
+    <div class="value">{{ source_counts.http }}</div>
+    <div class="sub">last {{ filters.hours }}h</div>
+  </div>
+  <div class="obs-card {{ 'err' if source_counts.email else '' }}">
+    <div class="label">Emails failed</div>
+    <div class="value">{{ source_counts.email }}</div>
+    <div class="sub">last {{ filters.hours }}h</div>
+  </div>
+  <div class="obs-card {{ 'warn' if source_counts.stock else '' }}">
+    <div class="label">Stock alerts</div>
+    <div class="value">{{ source_counts.stock }}</div>
+    <div class="sub">unresolved</div>
+  </div>
+  <div class="obs-card">
+    <div class="label">Events (24h)</div>
+    <div class="value">{{ counts.events_24h }}</div>
+    <div class="sub">all scopes combined</div>
+  </div>
+  <div class="obs-card">
+    <div class="label">Requests (24h)</div>
+    <div class="value">{{ counts.requests_24h }}</div>
+    <div class="sub {{ 'err' if counts.request_errors_24h else '' }}" style="{{ 'color:#b00020' if counts.request_errors_24h else '' }}">
+      {{ counts.request_errors_24h }} with status ≥ 400
+    </div>
+  </div>
+  <div class="obs-card">
+    <div class="label">Emails (7d)</div>
+    <div class="value">{{ counts.emails_sent_7d }}</div>
+    <div class="sub {{ 'err' if counts.emails_failed_7d else '' }}" style="{{ 'color:#b00020' if counts.emails_failed_7d else '' }}">
+      sent · {{ counts.emails_failed_7d }} failed
+    </div>
+  </div>
+  <div class="obs-card {{ 'warn' if counts.stock_alerts_open else '' }}">
+    <div class="label">Stock alerts</div>
+    <div class="value">{{ counts.stock_alerts_open }}</div>
+    <div class="sub">unresolved (all time)</div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>
+    Errores — todos los orígenes
+    <span class="toolbar" style="float:right;">
+      <a href="{{ admin_path }}/observe/events">All events →</a>
+      <a href="{{ admin_path }}/observe/requests">Requests →</a>
+      <a href="{{ admin_path }}/observe/emails">Emails →</a>
+      <a href="{{ admin_path }}/observe/diagrams">Diagrams →</a>
+    </span>
+  </h2>
+
+  <form class="filterbar" method="get" action="{{ admin_path }}/observe">
+    <label>Source
+      <select name="source" multiple size="4">
+        {% for s in source_options %}
+        <option value="{{ s }}" {% if s in filters.source.split(',') %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Level
+      <select name="level">
+        <option value="" {% if not filters.level %}selected{% endif %}>error + warn</option>
+        <option value="error" {% if filters.level == 'error' %}selected{% endif %}>error only</option>
+        <option value="warn" {% if filters.level == 'warn' %}selected{% endif %}>warn only</option>
+      </select>
+    </label>
+    <label>Last
+      <select name="hours">
+        {% for h in [1, 6, 24, 72, 168, 720, 2160] %}
+        <option value="{{ h }}" {% if filters.hours|int == h %}selected{% endif %}>
+          {{ '1h' if h == 1 else ('6h' if h == 6 else ('24h' if h == 24 else ('3d' if h == 72 else ('7d' if h == 168 else ('30d' if h == 720 else '90d'))))) }}
+        </option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Search
+      <input type="text" name="search" value="{{ filters.search }}" placeholder="message, path, tech…" style="width:220px;">
+    </label>
+    <button type="submit" class="btn">Apply</button>
+    <a class="btn btn-ghost" href="{{ admin_path }}/observe" style="padding:7px 16px;border-radius:6px;font-size:12.5px;text-decoration:none;">Clear</a>
+
+    <div class="auto-refresh">
+      <label for="refresh-select" style="display:flex;align-items:center;gap:5px;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8a7a5a" stroke-width="2">
+          <path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/>
+        </svg>
+        Auto-refresh
+      </label>
+      <select id="refresh-select">
+        <option value="0">Off</option>
+        <option value="15">15s</option>
+        <option value="30">30s</option>
+        <option value="60">1m</option>
+        <option value="300">5m</option>
+        <option value="900">15m</option>
+      </select>
+      <span class="updated-line" id="updated-line"></span>
+    </div>
+  </form>
+
+  {% if rows %}
+  <table class="tbl">
+    <thead>
+      <tr>
+        <th style="width:13%">When (AZ / CDMX)</th>
+        <th style="width:70px;">Source</th>
+        <th style="width:64px;">Level</th>
+        <th>What</th>
+        <th>Detail</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr class="{{ 'is-error' if r.level == 'error' else ('is-warn' if r.level == 'warn' else '') }}">
+        <td>
+          <div class="tz-line">
+            <span class="az">{{ r.ts|dualtz_date }} {{ r.ts|dualtz_az }} AZ</span>
+            <span class="cmx">{{ r.ts|dualtz_cmx }} CDMX</span>
+          </div>
+        </td>
+        <td>
+          <span class="src-tag src-{{ r.source }}">{{ r.source }}</span>
+          {% if r.tag %}<div class="scope-tag" style="margin-top:3px;display:inline-block;">{{ r.tag }}</div>{% endif %}
+        </td>
+        <td><span class="lvl lvl-{{ r.level }}">{{ r.level }}</span></td>
+        <td>
+          <code style="font-size:11px;">{{ r.kind }}</code>
+          <div style="margin-top:2px;">{{ r.title }}</div>
+          {% if r.ref %}<div style="font-size:10.5px;color:#999;">ref: {{ r.ref }}</div>{% endif %}
+        </td>
+        <td>
+          {% if r.detail %}
+          <button type="button" class="detail-toggle" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'block' ? 'none' : 'block';">show detail ▸</button>
+          <pre class="detail-pre detail-box">{{ r.detail|tojson(indent=2) }}</pre>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="pager">
+    {% set page = (offset // limit) + 1 %}
+    {% set pages = ((total + limit - 1) // limit) %}
+    <span>Showing {{ offset + 1 }}{% if offset + limit < total %}–{{ offset + limit }}{% else %}–{{ total }}{% endif %} of {{ total }}</span>
+    {% if offset > 0 %}
+    <a href="{{ admin_path }}/observe?source={{ filters.source }}&level={{ filters.level }}&hours={{ filters.hours }}&search={{ filters.search }}&limit={{ limit }}&offset={{ offset - limit }}">← Prev</a>
+    {% endif %}
+    <span>Page {{ page }} / {{ pages }}</span>
+    {% if offset + limit < total %}
+    <a href="{{ admin_path }}/observe?source={{ filters.source }}&level={{ filters.level }}&hours={{ filters.hours }}&search={{ filters.search }}&limit={{ limit }}&offset={{ offset + limit }}">Next →</a>
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="empty-note">Sin errores que coincidan con los filtros. ¡Bien! 🎉</div>
+  {% endif %}
+</div>
+
+<div class="section">
+  <h2>Requests per day (7d)</h2>
+  {% if days_chart %}
+  <div class="chart" style="margin-bottom: 22px;">
+    {% for d in days_chart %}
+      <div class="bar" style="height: {{ d.pct }}%;">
+        <span class="val">{{ d.n }}</span>
+        <span class="lbl">{{ d.day[-5:] }}</span>
+      </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div style="color:#888;font-style:italic;font-size:13px;">No requests yet.</div>
+  {% endif %}
+</div>
+
+<script>
+(function () {
+  const SELECTOR = "refresh-select";
+  const KEY = "obs_auto_refresh_secs";
+  const DEFAULT_SECS = "60";
+  const select = document.getElementById(SELECTOR);
+  const updated = document.getElementById("updated-line");
+
+  function fmt(ts) {
+    return new Date(ts).toLocaleString("en-US", {
+      hour12: false,
+      month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit",
+    });
+  }
+  updated.textContent = "updated " + fmt(Date.now());
+
+  let saved;
+  try { saved = localStorage.getItem(KEY) || DEFAULT_SECS; } catch (e) { saved = DEFAULT_SECS; }
+  select.value = saved;
+
+  select.addEventListener("change", function () {
+    try { localStorage.setItem(KEY, this.value); } catch (e) {}
+    if (this.value === "0") { location.reload(); return; }
+    setTimeout(function () { location.reload(); }, 1200);
+  });
+
+  const secs = parseInt(select.value, 10);
+  if (secs > 0) {
+    setTimeout(function () { location.reload(); }, secs * 1000);
+  }
+})();
+</script>
+
+{% endblock %}

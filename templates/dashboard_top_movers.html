@@ -1,0 +1,23 @@
+{% extends "dashboard_base.html" %}
+{% block title %}Top Movers{% endblock %}
+{% set active_page = "top_movers" %}
+{% block content %}
+<div class="section">
+  <div class="section-header">
+    <h2>{% if order == 'asc' %}Slow Movers{% else %}Top Movers{% endif %} <span class="count">last 30 days</span></h2>
+    <a href="/dashboard/top-movers?order={% if order == 'asc' %}desc{% else %}asc{% endif %}" class="btn btn-secondary btn-sm">
+      {% if order == 'asc' %}Show Top Movers{% else %}Show Slow Movers{% endif %}
+    </a>
+  </div>
+  <table>
+    <thead><tr><th>#</th><th>Part</th><th>Total Used</th></tr></thead>
+    <tbody>
+      {% for m in movers %}
+      <tr><td>{{ loop.index }}</td><td>{{ m.part_id }}</td><td>{{ m.total_used }}</td></tr>
+      {% else %}
+      <tr><td colspan="3" class="text-muted">No data yet. Process some invoices first.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

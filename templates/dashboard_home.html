@@ -1,0 +1,241 @@
+{% extends "dashboard_base.html" %}
+{% block title %}Home{% endblock %}
+{% set active_page = "home" %}
+{% block content %}
+{% if message %}
+<div style="margin-bottom:var(--space-md);padding:var(--space-md);background:var(--color-surface);border:1px solid var(--color-border);font-size:var(--text-sm)">
+  {{ message }}
+</div>
+{% endif %}
+<div class="summary-grid">
+  <div class="summary-card"><div class="value">{{ summary.techs }}</div><div class="label">Techs</div></div>
+  <div class="summary-card"><div class="value">{{ summary.trucks }}</div><div class="label">Trucks</div></div>
+  <div class="summary-card"><div class="value {% if summary.alerts > 0 %}alert-value{% endif %}">{{ summary.alerts }}</div><div class="label">Alerts</div></div>
+  <div class="summary-card"><div class="value {% if summary.unmatched > 0 %}alert-value{% endif %}">{{ summary.unmatched }}</div><div class="label">Unmatched Parts</div></div>
+  <div class="summary-card"><div class="value {% if summary.unmatched_packages > 0 %}alert-value{% endif %}">{{ summary.unmatched_packages }}</div><div class="label">Unmatched Packages</div></div>
+  <div class="summary-card"><div class="value {% if summary.stock_alerts > 0 %}alert-value{% endif %}">{{ summary.stock_alerts }}</div><div class="label">Stock Shortfalls</div></div>
+  <div class="summary-card"><div class="value">{{ summary.invoices_30d }}</div><div class="label">Invoices (30d)</div></div>
+</div>
+
+{% if stock_alerts %}
+<div class="section">
+  <div class="section-header"><h2>Stock Shortfall Alerts <span class="count">{{ stock_alerts|length }} — invoice used more than available</span></h2></div>
+  <table>
+    <thead><tr><th>Part</th><th>Requested</th><th>Available</th><th>Invoice</th><th>Date</th><th></th></tr></thead>
+    <tbody>
+      {% for a in stock_alerts %}
+      <tr>
+        <td>{{ a.part_name }}</td>
+        <td style="color:var(--color-danger);font-weight:600">{{ a.requested_qty }}</td>
+        <td>{{ a.available_qty }}</td>
+        <td class="text-muted text-xs">{{ a.invoice_id }}</td>
+        <td class="text-muted text-xs">{{ a.created_at }}</td>
+        <td>
+          <form method="post" action="/dashboard/alerts/stock/resolve" class="inline-form">
+            <input type="hidden" name="alert_id" value="{{ a.id }}">
+            <button type="submit" class="btn btn-secondary btn-sm">Resolve</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p class="text-sm mt-sm" style="color:var(--color-muted)">The invoice requested more than was in stock — the part was not deducted. Restock and reprocess if correct.</p>
+</div>
+{% endif %}
+
+{% if unmatched_packages %}
+<div class="section">
+  <div class="section-header"><h2>Unmatched Packages <span class="count">{{ unmatched_packages|length }} — package not found, pending assignment</span></h2></div>
+  <p class="text-sm" style="margin-bottom:var(--space-sm)">These package-shaped invoices didn't match an existing package. First create the package with its parts, then assign the invoice here.</p>
+  <table>
+    <thead><tr><th>Tech</th><th>Package Description</th><th>Invoice</th><th>Map To Package</th><th>Or Create</th></tr></thead>
+    <tbody>
+      {% for up in unmatched_packages %}
+      <tr>
+        <td>{{ up.tech_name }}</td>
+        <td>{{ up.raw_name }}</td>
+        <td class="text-muted text-xs">{{ up.invoice_id }}</td>
+        <td>
+          <form method="post" action="/dashboard/unmatched/package-map" class="inline-form">
+            <select name="pkg_map_{{ up.id }}" style="max-width:220px">
+              <option value="">—</option>
+              {% for pkg in all_packages %}
+              <option value="{{ up.id }}:{{ pkg.id }}">{% if not pkg_has_parts.get(pkg.id) %}{{ pkg.name }} (no parts yet){% else %}{{ pkg.name }}{% endif %}</option>
+              {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-primary btn-sm">Assign & Deduct</button>
+          </form>
+        </td>
+        <td>
+          <form method="post" action="/dashboard/unmatched/package-create" class="inline-form" onsubmit="return confirm('Create package &quot;{{ up.raw_name }}&quot;? Add its parts in the Packages tab, then come back to assign this invoice.')">
+            <input type="hidden" name="unmatched_id" value="{{ up.id }}">
+            <button type="submit" class="btn btn-secondary btn-sm">Create Package</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<div class="section">
+  <div class="section-header">
+    <h2>Monthly Deductions <span class="count">last 6 months</span></h2>
+  </div>
+  <div style="height:220px;position:relative">
+    <canvas id="monthlyChart"></canvas>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-header"><h2>Warehouse Breakdown <span class="count">last 30 days</span></h2></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-lg)">
+    <div style="height:200px;position:relative">
+      <canvas id="warehouseChart"></canvas>
+    </div>
+    <table>
+      <thead><tr><th>Warehouse</th><th>Line Items</th><th>Top Part</th></tr></thead>
+      <tbody>
+        {% for s in warehouse_usage %}
+        <tr>
+          <td>{{ s.name }}</td>
+          <td>{{ s.line_items }}</td>
+          <td>{{ s.top_part or "—" }} <span class="text-muted">({{ s.top_qty or 0 }})</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-header"><h2>Top Movers <span class="count">last 30 days</span></h2></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-lg)">
+    <div style="height:260px;position:relative">
+      <canvas id="topMoversChart"></canvas>
+    </div>
+    <table>
+      <thead><tr><th>#</th><th>Part</th><th>Total Used</th></tr></thead>
+      <tbody>
+        {% for m in top_movers %}
+        <tr><td>{{ loop.index }}</td><td>{{ m.part_id }}</td><td>{{ m.total_used }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if unmatched %}
+<div class="section">
+  <div class="section-header"><h2>Unmatched Parts <span class="count">{{ unmatched|length }} items</span></h2></div>
+  <div class="search-field"><input type="text" id="home_unmatched_search" placeholder="Search unmatched..." oninput="filterTable('home_unmatched_search', 'home_unmatched_table')"></div>
+  <form method="post" action="/dashboard/unmatched/bulk-map">
+    <table id="home_unmatched_table">
+      <thead><tr><th>Tech</th><th>Raw Name</th><th>Qty</th><th>Map To</th></tr></thead>
+      <tbody>
+        {% for u in unmatched %}
+        <tr>
+          <td>{{ u.tech_name }}</td>
+          <td>{{ u.raw_name }}</td>
+          <td>{{ u.quantity }}</td>
+          <td>
+            <select name="map_{{ u.id }}" style="max-width:200px">
+              <option value="">—</option>
+              {% for p in all_parts %}
+              <option value="{{ u.id }}:{{ p.id }}">{{ p.name }}</option>
+              {% endfor %}
+            </select>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <button type="submit" class="btn btn-primary mt-md">Save Mapping</button>
+  </form>
+</div>
+{% endif %}
+{% endblock %}
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+Chart.defaults.font.family = "'Public Sans','-apple-system',sans-serif";
+Chart.defaults.font.size = 11;
+Chart.defaults.color = 'oklch(0.55 0.012 50)';
+
+const accent = 'oklch(0.62 0.16 55)';
+const accentLight = 'oklch(0.62 0.16 55 / 0.2)';
+const warrantyColor = 'oklch(0.55 0.14 145)';
+const subColor = accent;
+const gridColor = 'oklch(0.88 0.006 50)';
+
+new Chart(document.getElementById('monthlyChart'), {
+  type: 'bar',
+  data: {
+    labels: {{ monthly_labels | tojson }},
+    datasets: [
+      {% for wh in all_warehouses %}
+      {
+        label: {{ wh.name | tojson }},
+        data: {{ monthly_series[wh.id] | tojson }},
+        backgroundColor: {% if loop.index == 1 %}'oklch(0.55 0.14 145 / 0.7)'{% else %}'oklch(0.62 0.16 55 / 0.7)'{% endif %},
+        borderColor: {% if loop.index == 1 %}'oklch(0.55 0.14 145)'{% else %}'oklch(0.62 0.16 55)'{% endif %},
+        borderWidth: 1
+      }{% if not loop.last %},{% endif %}
+      {% endfor %}
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'top', labels: { boxWidth: 12, padding: 12 } } },
+    scales: {
+      x: { grid: { display: false } },
+      y: { beginAtZero: true, grid: { color: gridColor }, ticks: { precision: 0 } }
+    }
+  }
+});
+
+new Chart(document.getElementById('warehouseChart'), {
+  type: 'doughnut',
+  data: {
+    labels: [{% for wh in all_warehouses %}{{ wh.name | tojson }}{% if not loop.last %},{% endif %}{% endfor %}],
+    datasets: [{
+      data: [{% for q in warehouse_used_qty %}{{ q }}{% if not loop.last %},{% endif %}{% endfor %}],
+      backgroundColor: ['oklch(0.55 0.14 145 / 0.8)', 'oklch(0.62 0.16 55 / 0.8)'],
+      borderWidth: 0
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'right', labels: { boxWidth: 12, padding: 10 } }
+    }
+  }
+});
+
+new Chart(document.getElementById('topMoversChart'), {
+  type: 'bar',
+  data: {
+    labels: [{% for m in top_movers %}{{ m.part_id | tojson }}{% if not loop.last %},{% endif %}{% endfor %}],
+    datasets: [{
+      label: 'Units used',
+      data: [{% for m in top_movers %}{{ m.total_used }}{% if not loop.last %},{% endif %}{% endfor %}],
+      backgroundColor: accentLight,
+      borderColor: accent,
+      borderWidth: 1,
+      borderRadius: 0
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    indexAxis: 'y',
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { beginAtZero: true, grid: { color: gridColor }, ticks: { precision: 0 } },
+      y: { grid: { display: false } }
+    }
+  }
+});
+</script>
+{% endblock %}

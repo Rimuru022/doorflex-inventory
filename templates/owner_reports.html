@@ -1,0 +1,97 @@
+{% extends "owner_base.html" %}
+{% block title %}Monthly Report{% endblock %}
+{% set active_page = "reports" %}
+{% block content %}
+<div class="section">
+  <div class="section-header"><h2>Monthly Report</h2></div>
+  <p class="text-sm text-muted" style="margin-bottom:var(--space-md);max-width:720px">
+    One-page professional PDF covering the previous month. Sent automatically on the 1st of each month at 00:05 AZ
+    to the recipients configured in <code>REPORT_RECIPIENTS</code> (set this in the server env). Use the form below
+    to send an on-demand copy to any address — useful for re-sending or sharing with someone not on the list.
+  </p>
+  {% if not resend_configured %}
+  <div class="section" style="background:oklch(0.97 0.05 85 / 0.3);border:1px solid oklch(0.65 0.14 85 / 0.4);padding:var(--space-md);border-radius:var(--radius);margin-bottom:var(--space-lg);max-width:720px">
+    <span class="text-sm"><strong>Resend API key not configured.</strong> Set <code>RESEND_API_KEY</code> in the server env and restart to enable sending.</span>
+  </div>
+  {% endif %}
+  {% if configured_recipients %}
+  <p class="text-sm" style="margin-bottom:var(--space-md)">
+    <strong>Monthly auto-send armed to:</strong> {{ configured_recipients | join(', ') }} — fires on the 1st at 00:05 AZ.
+  </p>
+  {% else %}
+  <p class="text-sm" style="margin-bottom:var(--space-md);color:var(--color-muted)">
+    <strong>No <code>REPORT_RECIPIENTS</code> configured.</strong> Monthly auto-send is off. The on-demand form below still works if you enter recipients manually.
+  </p>
+  {% endif %}
+
+  <div class="form-card" style="max-width:680px">
+    <h3>Send Report Now</h3>
+    <p class="text-sm text-muted" style="margin-top:var(--space-sm)">
+      Period: <strong>{{ preview.month_label }}</strong> ({{ preview.period }})
+    </p>
+    <form method="post" action="{{ admin_path }}/reports/send" class="mt-md">
+      <label>Recipients (comma-separated)</label>
+      <input type="text" name="recipients" placeholder="leave blank to use REPORT_RECIPIENTS"
+             value="{{ configured_recipients | join(', ') }}">
+      <p class="text-xs text-muted" style="margin-top:var(--space-xs)">
+        Currently configured: <strong>{{ configured_recipients | join(', ') or 'none (set REPORT_RECIPIENTS in .env)' }}</strong>
+      </p>
+      <button type="submit" class="btn btn-primary mt-md">Generate PDF &amp; Send</button>
+    </form>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-header"><h2>Preview — {{ preview.month_label }}</h2></div>
+  <div class="two-col">
+    <div class="form-card">
+      <h3>Key Metrics</h3>
+      <table style="margin-top:var(--space-sm)">
+        <tbody>
+          {% for k, v in preview.metrics.items() %}
+          <tr><td>{{ k }}</td><td style="text-align:right;font-weight:600">{{ v }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="form-card">
+      <h3>Stock Health</h3>
+      <table style="margin-top:var(--space-sm)">
+        <tbody>
+          <tr><td>Items below minimum</td><td style="text-align:right;font-weight:600;color:{% if preview.stock.low_count %}var(--color-danger){% endif %}">{{ preview.stock.low_count }}</td></tr>
+          <tr><td>Total shortfall (units)</td><td style="text-align:right;font-weight:600;color:{% if preview.stock.shortfall %}var(--color-danger){% endif %}">{{ preview.stock.shortfall }}</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="two-col mt-md">
+    <div class="form-card">
+      <h3>Unresolved Queue</h3>
+      <table style="margin-top:var(--space-sm)">
+        <tbody>
+          <tr><td>Unmatched parts</td><td style="text-align:right;font-weight:600;color:{% if preview.unresolved.unmatched_parts %}var(--color-danger){% endif %}">{{ preview.unresolved.unmatched_parts }}</td></tr>
+          <tr><td>Unmatched packages</td><td style="text-align:right;font-weight:600;color:{% if preview.unresolved.unmatched_packages %}var(--color-danger){% endif %}">{{ preview.unresolved.unmatched_packages }}</td></tr>
+          <tr><td>Tech confirmations</td><td style="text-align:right;font-weight:600;color:{% if preview.unresolved.tech_confirmations %}var(--color-danger){% endif %}">{{ preview.unresolved.tech_confirmations }}</td></tr>
+          <tr><td>Stock alerts</td><td style="text-align:right;font-weight:600;color:{% if preview.unresolved.stock_alerts %}var(--color-danger){% endif %}">{{ preview.unresolved.stock_alerts }}</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="form-card">
+      <h3>Top Movers (this month)</h3>
+      {% if preview.top_movers %}
+      <table style="margin-top:var(--space-sm)">
+        <thead><tr><th>#</th><th>Part</th><th style="text-align:right">Qty</th></tr></thead>
+        <tbody>
+          {% for m in preview.top_movers %}
+          <tr><td>{{ loop.index }}</td><td>{{ m.part }}</td><td style="text-align:right;font-weight:600">{{ m.qty }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p class="text-muted mt-sm">No invoice activity this period.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

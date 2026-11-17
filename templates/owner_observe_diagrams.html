@@ -1,0 +1,380 @@
+{% extends "owner_base.html" %}
+{% block title %}Diagrams{% endblock %}
+{% block content %}
+
+<style>
+.section {
+  background: #fff;
+  border: 1px solid #e6dfd2;
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin-bottom: 18px;
+}
+.section h2 { margin: 0 0 6px; font-size: 15px; color: #9a5a1f; text-transform: uppercase; letter-spacing: 0.04em; }
+.section .lede { color: #666; font-size: 12.5px; margin-bottom: 12px; }
+.tabs { display: flex; gap: 4px; margin-bottom: 12px; flex-wrap: wrap; }
+.tab {
+  padding: 6px 12px; border-radius: 6px 6px 0 0;
+  background: #f3efe7; color: #5d5b48; cursor: pointer; font-size: 12.5px; font-weight: 600;
+  border: 1px solid #d8c9a8; border-bottom: 0;
+}
+.tab.active { background: #fff; color: #9a5a1f; border-color: #9a5a1f; }
+.panel { display: none; }
+.panel.active { display: block; }
+.mermaid { background: #fcf9f2; border-radius: 8px; padding: 14px; overflow: auto; }
+.legend {
+  font-size: 11.5px; color: #666; margin-top: 8px; display: flex; gap: 12px; flex-wrap: wrap;
+}
+.legend span { background: #f3efe7; padding: 2px 8px; border-radius: 4px; }
+.refresh-btn {
+  margin-left: 8px; font-size: 11px; background: #6c6452; color: #fff; border: 0;
+  padding: 4px 10px; border-radius: 4px; cursor: pointer; font-weight: 600;
+}
+</style>
+
+<script src="/static/mermaid.min.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    if (window.mermaid) {
+      window.mermaid.initialize({
+        startOnLoad: true,
+        theme: 'base',
+        securityLevel: 'loose',
+        themeVariables: {
+          primaryColor: '#fbf6e6',
+          primaryTextColor: '#1a1a1a',
+          primaryBorderColor: '#9a5a1f',
+          lineColor: '#8a7a5a',
+          fontFamily: 'Public Sans, -apple-system, Segoe UI, Roboto, sans-serif',
+          fontSize: '13px',
+          clusterBkg: '#f3efe7',
+          clusterBorder: '#d8c9a8',
+        },
+        flowchart: { curve: 'basis', nodeSpacing: 36, rankSpacing: 50, padding: 12, useMaxWidth: true },
+      });
+    }
+    document.querySelectorAll('.tab').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var target = this.getAttribute('data-target');
+        document.querySelectorAll('.tab').forEach(function (t) { t.classList.remove('active'); });
+        document.querySelectorAll('.panel').forEach(function (p) { p.classList.remove('active'); });
+        this.classList.add('active');
+        document.getElementById('panel-' + target).classList.add('active');
+      });
+    });
+    var btn = document.getElementById('refresh-deps');
+    if (btn) {
+      btn.addEventListener('click', function () {
+        var target = document.querySelector('#panel-deps .mermaid');
+        btn.disabled = true; btn.textContent = 'Rebuilding…';
+        fetch('{{ admin_path }}/observe/api/module-deps').then(function (r) { return r.json(); })
+          .then(function (j) {
+            target.innerHTML = '<pre class="mermaid">' + j.mermaid + '</pre>';
+            if (window.mermaid) { window.mermaid.run(); }
+            btn.disabled = false; btn.textContent = '↻ Rebuild from code';
+          })
+          .catch(function (e) {
+            btn.disabled = false; btn.textContent = '� Rebuild from code';
+            alert('Failed: ' + e);
+          });
+      });
+    }
+  });
+</script>
+
+<div style="margin-bottom: 16px;">
+  <h1 style="margin:0 0 4px;font-size:20px;">Diagrams</h1>
+  <div style="color:#888;font-size:12px;">
+    <a href="{{ admin_path }}/observe">← Dashboard</a>
+    · dependency + flow diagrams for the first weeks of production debugging.
+  </div>
+</div>
+
+<div class="section">
+  <div class="tabs">
+    <button class="tab active" data-target="email">Email ingest pipeline</button>
+    <button class="tab" data-target="pwa">PWA sync flow</button>
+    <button class="tab" data-target="reorder">Weekly reorder</button>
+    <button class="tab" data-target="deps">Module dependencies</button>
+  </div>
+
+  <!-- Email ingest -->
+  <div id="panel-email" class="panel active">
+    <h2>Email ingest pipeline</h2>
+    <div class="lede">From the technician's inbox to a deduction (or to /dashboard/unmatched). The "events" column shows the events this page logs.</div>
+    <div class="mermaid">
+flowchart LR
+  subgraph SRC[Source]
+    TECH["Technician email<br/>+ PDF invoice"]:::src
+  end
+  subgraph INGEST[Ingest]
+    CF["Cloudflare Email<br/>Routing"]:::cloud
+    WORKER["email-worker<br/>reenvía MIME"]:::ext
+    WHOK["POST /api/ingest/email<br/>X-Webhook-Secret"]:::route
+  end
+  subgraph POLL[Poller]
+    POLLER["process_single_email<br/>dedupe por Message-ID"]:::mod
+    PARSE["pdf_extractor<br/>+ format detector"]:::mod
+    MATCHT["techs.find_tech_by_name<br/>exacto o fuzzy"]:::mod
+    DEDUCT["inventory.deduct<br/>o pwa_deduct"]:::mod
+  end
+  subgraph STORE[Storage]
+    LOG[("log<br/>(source=email)")]:::db
+    STOCK[("stock<br/>truck")]:::db
+    WHSTOCK[("warehouse_stock")]:::db
+    UNM[("unmatched_parts")]:::db
+    ALERT[("stock_alerts")]:::db
+    EVT[("app_events")]:::db
+  end
+  subgraph UI[UI]
+    DASH["/dashboard/unmatched<br/>/alerts"]:::ui
+  end
+
+  TECH --> CF --> WORKER --> WHOK --> POLLER
+  POLLER -->|"PDF adjunto"| PARSE --> MATCHT
+  POLLER -->|"dedupe hit"| EVT
+  PARSE -->|"formato itemized"| DEDUCT
+  PARSE -->|"formato package"| MATCHT
+  MATCHT -->|"exacto"| DEDUCT
+  MATCHT -->|"fuzzy_pending"| UNM
+  MATCHT -->|"tech no exacto"| UNM
+  MATCHT -->|"tech PWA"| UNM
+  DEDUCT -->|"ok"| LOG --> STOCK
+  DEDUCT -->|"stock insuficiente"| ALERT
+  PARSE -.->|"err"| EVT
+  MATCHT -.->|"warn"| EVT
+  DEDUCT -.->|"warn"| EVT
+  UNM --> DASH
+  ALERT --> DASH
+
+  classDef src fill:#fff5e6,stroke:#d2a26b,color:#1a1a1a;
+  classDef cloud fill:#eef4ff,stroke:#4a7bb8,color:#1a1a1a;
+  classDef ext fill:#f4eefa,stroke:#7a5bb8,color:#1a1a1a;
+  classDef route fill:#fbf6e6,stroke:#9a5a1f,color:#1a1a1a;
+  classDef mod fill:#f6f0e1,stroke:#9a5a1f,color:#1a1a1a;
+  classDef db fill:#fff,stroke:#8a7a5a,color:#1a1a1a;
+  classDef ui fill:#e7f3ef,stroke:#1e6b54,color:#1a1a1a;
+    </div>
+    <div class="legend">
+      <span>Events: <code>ingest.received</code> · <code>ingest.duplicate</code> · <code>ingest.no_pdf</code> · <code>ingest.tech_pending</code> · <code>ingest.pwa_flagged</code> · <code>ingest.unmatched_part</code> · <code>ingest.fuzzy_pending</code> · <code>ingest.deduct_blocked</code> · <code>stock.shortfall</code></span>
+    </div>
+  </div>
+
+  <!-- PWA sync -->
+  <div id="panel-pwa" class="panel">
+    <h2>PWA sync flow</h2>
+    <div class="lede">The Winston technician's offline-first app — confirm a deduction → it survives going offline → it syncs when network is back.</div>
+    <div class="mermaid">
+flowchart LR
+  subgraph PWA[PWA /tech/pwa]
+    UI["Stepper − / + / input<br/>Confirm"]:::ui
+    QUEUE[("IndexedDB<br/>doorflex.db<br/>store: queue")]:::db
+    LS[("localStorage<br/>doorflex.queue")]:::db
+    BG["Service Worker<br/>pushPending (Chrome/Android)"]:::cloud
+  end
+  subgraph TRIGGERS[Sync triggers]
+    T1["15s heartbeat<br/>(visible)"]:::trigger
+    T2["online / focus<br/>/ visibilitychange<br/>/ connection"]:::trigger
+    T3["2min catalog refresh"]:::trigger
+    T4["button ↻"]:::trigger
+  end
+  subgraph API[Server API]
+    CAT["GET /tech/catalog<br/>(token=...)"]:::route
+    DED["POST /tech/deductions<br/>{batch_id, items}"]:::route
+    PROC["process_batch<br/>is_batch_processed?"]:::mod
+    PWAD["inventory.pwa_deduct<br/>(allow negative + alert)"]:::mod
+  end
+  subgraph STORE[Storage]
+    DBCAT[("stock<br/>truck only")]:::db
+    DBAT[("deduction_batches<br/>idempotente")]:::db
+    DBLOG[("log source=pwa")]:::db
+    DBAL[("stock_alerts")]:::db
+    EVT[("app_events")]:::db
+  end
+
+  UI -->|"idbSet queue"| QUEUE
+  UI -->|"mirror"| LS
+  UI -.->|"rebuild shadows"| QUEUE
+
+  T1 -->|"if pending"| SYNC["syncNow()"]:::mod
+  T2 --> SYNC
+  T3 -->|"refreshCatalog()"| CAT
+  T4 --> SYNC
+  BG -->|"sync event"| SYNC
+
+  SYNC -->|"POST batch"| DED
+  SYNC -->|"GET fresh"| CAT
+  CAT -->|"truck stock"| DBCAT
+  DED --> PROC --> PWAD
+  PROC -->|"idempotent?"| DBAT
+  PWAD -->|"apply to truck"| DBCAT
+  PWAD -->|"log"| DBLOG
+  PWAD -->|"if stock&lt;0"| DBAL
+  PROC -.->|"events"| EVT
+  PWAD -.->|"stock.shortfall"| EVT
+
+  classDef ui fill:#e7f3ef,stroke:#1e6b54,color:#1a1a1a;
+  classDef cloud fill:#eef4ff,stroke:#4a7bb8,color:#1a1a1a;
+  classDef trigger fill:#fbe5c4,stroke:#8a5d00,color:#1a1a1a;
+  classDef route fill:#fbf6e6,stroke:#9a5a1f,color:#1a1a1a;
+  classDef mod fill:#f6f0e1,stroke:#9a5a1f,color:#1a1a1a;
+  classDef db fill:#fff,stroke:#8a7a5a,color:#1a1a1a;
+    </div>
+    <div class="legend">
+      <span>Events: <code>pwa.batch.processed</code> · <code>pwa.batch.duplicate</code> · <code>pwa.auth.invalid_token</code> · <code>stock.shortfall</code></span>
+    </div>
+  </div>
+
+  <!-- Weekly reorder -->
+  <div id="panel-reorder" class="panel">
+    <h2>Weekly reorder (Friday 08:00 AZ)</h2>
+    <div class="lede">Cron fires once, the email_service handles retries (5min/30min), reorder_requests drive the "Mark as received" workflow.</div>
+    <div class="mermaid">
+flowchart LR
+  subgraph CRON[Cron Friday 08:00 AZ]
+    LOOP["_weekly_reorder_loop<br/>+ _send_weekly_emails"]:::trigger
+  end
+  subgraph ENGINE[Reorder engine]
+    RR["reorder.run_weekly_reorder<br/>auto_resolve_by_stock"]:::mod
+    BO["build_distributor_orders<br/>group by active distributor"]:::mod
+    BW["build_weekly_alert_data<br/>(Section A)"]:::mod
+  end
+  subgraph STORE[Storage]
+    WH[("warehouse_stock")]:::db
+    PART[("parts + product_distributors")]:::db
+    RR2[("reorder_requests<br/>pending → sent → received")]:::db
+  end
+  subgraph EMAILS[Emails]
+    C1["C.1: reorder email<br/>to distributor"]:::ui
+    C2C4["C.2+C.4: internal summary<br/>ALERT_RECIPIENTS"]:::ui
+    ALERTA["A: weekly low-stock alert<br/>ALERT_RECIPIENTS"]:::ui
+    NOTIF["delivery-failure notif<br/>ALERT_RECIPIENTS"]:::ui
+  end
+  subgraph UI[UI]
+    DASH["/dashboard/reorders<br/>'Mark as received'"]:::ui
+  end
+  subgraph RESEND[Resend]
+    API["email_service.send_with_retry<br/>3 attempts + ALERT fallback"]:::ext
+  end
+
+  LOOP --> RR --> BO
+  RR -->|"low stock"| WH
+  RR -->|"mapping"| PART
+  BO -->|"per-distributor"| C1
+  BO -->|"amazon items"| C2C4
+  BO -->|"unassigned"| C2C4
+  BW --> ALERTA
+  BO -->|"create row"| RR2
+
+  C1 --> API
+  C2C4 --> API
+  ALERTA --> API
+  API -->|"fail 3x"| NOTIF
+  RR2 --> DASH
+  DASH -->|"resolve"| RR2
+  RR -.->|"events"| EVT[("app_events")]:::db
+
+  classDef trigger fill:#fbe5c4,stroke:#8a5d00,color:#1a1a1a;
+  classDef mod fill:#f6f0e1,stroke:#9a5a1f,color:#1a1a1a;
+  classDef db fill:#fff,stroke:#8a7a5a,color:#1a1a1a;
+  classDef ui fill:#e7f3ef,stroke:#1e6b54,color:#1a1a1a;
+  classDef ext fill:#f4eefa,stroke:#7a5bb8,color:#1a1a1a;
+    </div>
+    <div class="legend">
+      <span>Events: <code>cron.weekly_reorder</code> · <code>email.reorder.sent/failed</code> · <code>email.internal_summary.sent/failed</code> · <code>email.weekly_alert.sent/failed</code></span>
+    </div>
+  </div>
+
+  <!-- Module deps -->
+  <div id="panel-deps" class="panel">
+    <h2>Module dependencies
+      <button id="refresh-deps" class="refresh-btn">↻ Rebuild from code</button>
+    </h2>
+    <div class="lede">Auto-generated from <code>import</code> statements. Click <b>Rebuild from code</b> after a refactor.</div>
+    <div class="mermaid">
+flowchart LR
+    subgraph ext[External]
+      fastapi:::ext
+      sqlite3:::ext
+      pdfplumber:::ext
+      requests:::ext
+      reportlab:::ext
+      resend_API:::ext
+    end
+    classDef ext fill:#eef0f4,stroke:#aab,color:#445,font-size:11px;
+
+    subgraph app[App]
+      main["main.py"]
+      config["config.py"]
+      database["database.py"]
+    end
+
+    subgraph mods[modules/]
+      modules_analytics["modules/analytics.py"]
+      modules_demo["modules/demo.py"]
+      modules_distributors["modules/distributors.py"]
+      modules_email_builders["modules/email_builders.py"]
+      modules_email_poller["modules/email_poller.py"]
+      modules_email_reporter["modules/email_reporter.py"]
+      modules_email_service["modules/email_service.py"]
+      modules_events["modules/events.py"]
+      modules_excel_import["modules/excel_import.py"]
+      modules_inventory["modules/inventory.py"]
+      modules_logger["modules/logger.py"]
+      modules_name_matcher["modules/name_matcher.py"]
+      modules_owner["modules/owner.py"]
+      modules_packages["modules/packages.py"]
+      modules_parts["modules/parts.py"]
+      modules_pdf_extractor["modules/pdf_extractor.py"]
+      modules_pwa["modules/pwa.py"]
+      modules_reorder["modules/reorder.py"]
+      modules_techs["modules/techs.py"]
+      modules_trucks["modules/trucks.py"]
+      modules_warehouses["modules/warehouses.py"]
+    end
+
+    subgraph scripts[scripts/]
+      scripts_deps_mermaid["scripts/deps_mermaid.py"]
+    end
+
+    main --> config
+    main --> database
+    main --> modules_analytics
+    main --> modules_distributors
+    main --> modules_email_builders
+    main --> modules_email_poller
+    main --> modules_email_service
+    main --> modules_events
+    main --> modules_excel_import
+    main --> modules_inventory
+    main --> modules_logger
+    main --> modules_owner
+    main --> modules_packages
+    main --> modules_parts
+    main --> modules_pwa
+    main --> modules_reorder
+    main --> modules_techs
+    main --> modules_trucks
+    main --> modules_warehouses
+    modules_demo --> database
+    modules_email_builders --> config
+    modules_email_poller --> modules_name_matcher
+    modules_email_poller --> modules_pdf_extractor
+    modules_email_reporter --> config
+    modules_email_service --> config
+    modules_events --> database
+    modules_inventory --> modules_logger
+    modules_inventory --> modules_reorder
+    modules_owner --> config
+    modules_owner --> database
+    modules_owner --> modules_email_reporter
+    modules_owner --> scripts_deps_mermaid
+    modules_parts --> modules_reorder
+
+    linkStyle default stroke:#8a7a5a,stroke-width:1px;
+    classDef default fill:#fbf6e6,stroke:#9a5a1f,color:#1a1a1a,font-size:11px;
+    </div>
+  </div>
+</div>
+
+{% endblock %}

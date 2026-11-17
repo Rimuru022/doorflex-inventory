@@ -1,0 +1,72 @@
+{% extends "dashboard_base.html" %}
+{% block title %}Distributors{% endblock %}
+{% set active_page = "distributors" %}
+{% block content %}
+{% if message %}
+<div class="section" style="background:oklch(0.95 0.03 145 / 0.35);border:1px solid oklch(0.55 0.14 145 / 0.4);padding:var(--space-md);border-radius:var(--radius)">
+  <span class="text-sm">{{ message }}</span>
+</div>
+{% endif %}
+
+<div class="section">
+  <div class="section-header">
+    <h2>Distributors <span class="count">{{ distributors|length }}</span></h2>
+    <a href="/dashboard/parts" class="btn btn-secondary btn-sm">← Back to Parts</a>
+  </div>
+  <p class="text-xs text-muted" style="margin-bottom:var(--space-md)">
+    The 5 placeholders (<code>dist_a</code>..<code>dist_d</code>, <code>amazon</code>) are seeded for backwards compatibility.
+    Real vendors (e.g. <code>service_spring</code>) are created here and become available for catalog imports on the
+    <a href="/dashboard/parts">Parts</a> page.
+  </p>
+  <table>
+    <thead>
+      <tr><th>ID</th><th>Name</th><th>Email</th><th style="width:340px"></th></tr>
+    </thead>
+    <tbody>
+      {% for d in distributors %}
+      <tr>
+        <td><code>{{ d.id }}</code></td>
+        <td><strong>{{ d.name }}</strong></td>
+        <td>
+          <form method="post" action="/dashboard/distributors/update" class="inline-form" style="display:flex;gap:0.4rem;align-items:center">
+            <input type="hidden" name="distributor_id" value="{{ d.id }}">
+            <input type="email" name="email" value="{{ d.email or '' }}" placeholder="distributor@email.com" style="width:200px">
+            <button type="submit" class="btn btn-secondary btn-sm">Save email</button>
+          </form>
+        </td>
+        <td>
+          <form method="post" action="/dashboard/distributors/update" class="inline-form" style="display:flex;gap:0.4rem;align-items:center">
+            <input type="hidden" name="distributor_id" value="{{ d.id }}">
+            <input type="text" name="name" value="{{ d.name }}" style="width:160px" required>
+            <button type="submit" class="btn btn-secondary btn-sm">Rename</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="two-col">
+  <div class="form-card">
+    <h3>Create Distributor</h3>
+    <form method="post" action="/dashboard/distributors/create">
+      <label>ID * <span class="text-xs text-muted">(lowercase, no spaces — e.g. <code>service_spring</code>)</span></label>
+      <input type="text" name="distributor_id" required pattern="[a-z0-9_\-]+" placeholder="vendor_id">
+      <label class="mt-sm">Name *</label>
+      <input type="text" name="name" required placeholder="Service Spring">
+      <label class="mt-sm">Email <span class="text-xs text-muted">(optional — reorder emails go here)</span></label>
+      <input type="email" name="email" placeholder="orders@vendor.com">
+      <button type="submit" class="btn btn-primary mt-md">Create Distributor</button>
+    </form>
+  </div>
+  <div class="form-card">
+    <h3>Where this is used</h3>
+    <ul class="text-sm" style="line-height:1.6">
+      <li><strong>Parts page</strong> — the per-part active-distributor dropdown + the <em>Import Distributor Catalog</em> panel.</li>
+      <li><strong>Reorder emails</strong> — the active distributor for a part decides who receives the reorder email.</li>
+      <li><strong>Distributor mapping import</strong> — link DoorFlex canonical SKUs to the vendor's SKUs/names.</li>
+    </ul>
+  </div>
+</div>
+{% endblock %}

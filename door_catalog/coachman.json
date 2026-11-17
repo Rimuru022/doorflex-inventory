@@ -1,0 +1,70 @@
+{
+  "_source": "Clopay Coachman Residential Garage Doors price book, effective April 2025 (coachman.pdf, 39 pages, provided by Nick 2026-08-17). Item number = insulation prefix + design number (e.g. CGU21). Pricing/regional Wind Code variants are intentionally NOT modeled here — this file only backs the door-order capture dropdowns, not quoting.",
+  "label": "Coachman",
+  "insulations": {
+    "CD": {"label": "CD — 1-3/8\" Polystyrene (R-6.5)", "r_value": 6.5},
+    "CG": {"label": "CG — 2\" Polystyrene (R-9.0)", "r_value": 9.0},
+    "CGU": {"label": "CGU — 2\" Polyurethane / Intellicore (R-18.4)", "r_value": 18.4}
+  },
+  "designs": [
+    {"design": "11", "series": 1, "insulations": ["CD", "CG", "CGU"], "windows_allowed": true, "width_group": "group_a"},
+    {"design": "12", "series": 1, "insulations": ["CD", "CG", "CGU"], "windows_allowed": true, "width_group": "group_a"},
+    {"design": "13", "series": 1, "insulations": ["CD", "CG", "CGU"], "windows_allowed": true, "width_group": "group_a"},
+    {"design": "21", "series": 2, "insulations": ["CD", "CG", "CGU"], "windows_allowed": true, "width_group": "group_a"},
+    {"design": "22", "series": 2, "insulations": ["CD", "CG", "CGU"], "windows_allowed": true, "width_group": "group_b"},
+    {"design": "23", "series": 2, "insulations": ["CD", "CG", "CGU"], "windows_allowed": true, "width_group": "group_b"},
+    {"design": "31", "series": 3, "insulations": ["CGU"], "windows_allowed": false, "width_group": "group_a"},
+    {"design": "32", "series": 3, "insulations": ["CGU"], "windows_allowed": false, "width_group": "group_a"},
+    {"design": "33", "series": 3, "insulations": ["CGU"], "windows_allowed": false, "width_group": "group_a"},
+    {"design": "36", "series": 3, "insulations": ["CGU"], "windows_allowed": false, "width_group": "group_a"},
+    {"design": "34", "series": 3, "insulations": ["CD", "CG", "CGU"], "windows_allowed": false, "width_group": "group_c"},
+    {"design": "35", "series": 3, "insulations": ["CD", "CG", "CGU"], "windows_allowed": false, "width_group": "group_c"},
+    {"design": "41", "series": 4, "insulations": ["CD", "CG", "CGU"], "windows_allowed": false, "width_group": "group_a"},
+    {"design": "42", "series": 4, "insulations": ["CD", "CG", "CGU"], "windows_allowed": false, "width_group": "group_a"},
+    {"design": "43", "series": 4, "insulations": ["CD", "CG", "CGU"], "windows_allowed": false, "width_group": "group_a"}
+  ],
+  "width_groups": {
+    "group_a": {
+      "_designs": "11, 12, 13, 21, 31, 32, 33, 36, 41, 42, 43",
+      "CD": ["6'2\"", "6'4\"", "7'0\"", "7'2\"", "7'6\"", "7'8\"", "8'0\"", "8'2\"", "8'6\"", "9'0\"", "9'2\"", "10'0\"", "12'0\"", "12'2\"", "13'0\"", "13'6\"", "13'8\"", "14'0\"", "14'2\"", "15'0\"", "15'2\"", "15'6\"", "15'8\"", "16'0\"", "16'2\"", "17'0\"", "18'0\"", "18'2\""],
+      "CG_CGU": ["6'2\"", "6'4\"", "7'0\"", "7'2\"", "7'6\"", "7'8\"", "8'0\"", "8'2\"", "8'6\"", "9'0\"", "9'2\"", "10'0\"", "12'0\"", "12'2\"", "13'0\"", "13'6\"", "13'8\"", "14'0\"", "14'2\"", "15'0\"", "15'2\"", "15'6\"", "15'8\"", "16'0\"", "16'2\"", "17'0\"", "18'0\"", "18'2\"", "19'0\"", "20'0\""]
+    },
+    "group_b": {
+      "_designs": "22, 23",
+      "CD": ["6'2\"", "6'4\"", "7'0\"", "7'2\"", "7'6\"", "7'8\"", "8'0\"", "8'2\"", "8'6\"", "9'0\"", "9'2\"", "10'0\"", "14'0\"", "14'2\"", "15'0\"", "15'2\"", "15'6\"", "15'8\"", "16'0\"", "16'2\"", "17'0\"", "18'0\"", "18'2\""],
+      "CG_CGU": ["6'2\"", "6'4\"", "7'0\"", "7'2\"", "7'6\"", "7'8\"", "8'0\"", "8'2\"", "8'6\"", "9'0\"", "9'2\"", "10'0\"", "14'0\"", "14'2\"", "15'0\"", "15'2\"", "15'6\"", "15'8\"", "16'0\"", "16'2\"", "17'0\"", "18'0\"", "18'2\"", "19'0\""]
+    },
+    "group_c": {
+      "_designs": "34, 35",
+      "CD": ["6'2\"", "6'4\"", "7'0\"", "7'2\"", "7'6\"", "7'8\"", "8'0\"", "8'2\"", "8'6\"", "9'0\"", "9'2\"", "10'0\"", "14'0\"", "14'2\"", "15'0\"", "15'2\"", "15'6\"", "15'8\"", "16'0\"", "16'2\"", "17'0\"", "18'0\"", "18'2\""],
+      "CG_CGU": ["6'2\"", "6'4\"", "7'0\"", "7'2\"", "7'6\"", "7'8\"", "8'0\"", "8'2\"", "8'6\"", "9'0\"", "9'2\"", "10'0\"", "14'0\"", "14'2\"", "15'0\"", "15'2\"", "15'6\"", "15'8\"", "16'0\"", "16'2\"", "17'0\"", "18'0\"", "18'2\"", "19'0\""]
+    }
+  },
+  "height_rules": {
+    "series_1_3_4": {"min_in": 72, "max_in": 192, "step_in": 3},
+    "series_2": {"min_in": 72, "max_in": 120, "step_in": 3}
+  },
+  "windows": {
+    "styles": [
+      {"code": "ARCH3", "label": "Arched (3″ radius family)"},
+      {"code": "ARCH4", "label": "Arched (4″ radius family)"},
+      {"code": "SQ23", "label": "Square"},
+      {"code": "SQ24", "label": "Square (alt.)"},
+      {"code": "REC13", "label": "Rectangular"},
+      {"code": "REC14", "label": "Rectangular (alt.)"}
+    ],
+    "glass_types": [
+      {"code": "OBSCURE_DSB", "label": "Obscure (DSB)", "insulations": ["CD", "CG", "CGU"]},
+      {"code": "INS_DSB", "label": "Insulated DSB", "insulations": ["CG", "CGU"]},
+      {"code": "INS_OBSCURE", "label": "Insulated Obscure", "insulations": ["CG", "CGU"]},
+      {"code": "INS_LOW_E", "label": "Insulated Low-E", "insulations": ["CG", "CGU"]},
+      {"code": "FROSTED_DSB", "label": "Frosted (DSB)", "insulations": ["CD", "CG", "CGU"]},
+      {"code": "INS_FROSTED", "label": "Insulated Frosted DSB", "insulations": ["CG", "CGU"]},
+      {"code": "RAIN_DSB", "label": "Rain (DSB)", "insulations": ["CD", "CG", "CGU"]},
+      {"code": "INS_RAIN", "label": "Insulated Rain DSB", "insulations": ["CG", "CGU"]},
+      {"code": "SEEDED_DSB", "label": "Seeded (DSB)", "insulations": ["CD", "CG", "CGU"]},
+      {"code": "INS_SEEDED", "label": "Insulated Seeded DSB", "insulations": ["CG", "CGU"]}
+    ]
+  },
+  "colors": ["White", "Almond", "Desert Tan", "Sandtone"]
+}

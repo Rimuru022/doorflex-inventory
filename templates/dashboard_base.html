@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/png" href="https://images.squarespace-cdn.com/content/v1/697927f21da39d20b8c643e3/982c2a3b-e83e-47fa-b327-88a997fb6c65/38F18C26-0AA4-4042-9B66-5B19ED19078A.PNG?format=100w">
+<title>DoorFlex Inventory - {% block title %}Dashboard{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+{% include "partials/styles.html" %}
+{% include "partials/motion.html" %}
+</head>
+<body>
+<nav class="navbar">
+  <div style="display:flex;align-items:center;gap:0.75rem">
+    <span style="font-weight:800;font-size:1.15rem;letter-spacing:0.06em;color:#fff;text-transform:uppercase">DOORFLEX</span>
+    <span style="font-weight:400;font-size:0.8125rem;color:oklch(0.65 0.01 50);letter-spacing:0.02em">Inventory</span>
+  </div>
+  {% set catalog_pages = ['parts', 'distributors', 'packages', 'unmatched', 'upload'] %}
+  {% set stock_pages = ['stock', 'usage', 'log', 'alerts', 'top_movers', 'reorders'] %}
+  {% set fleet_pages = ['techs', 'trucks', 'warehouses'] %}
+  {% set field_pages = ['jobs_today', 'overview_today', 'door_orders', 'disputes', 'commission'] %}
+  <ul class="navbar-links">
+    <li><a href="/dashboard" class="{% if active_page == 'home' %}active{% endif %}">Home</a></li>
+    <li class="nav-group">
+      <button type="button" class="nav-group-toggle {% if active_page in catalog_pages %}active{% endif %}" onclick="toggleNavGroup(this)">Catalog <span class="caret">▾</span></button>
+      <ul class="nav-dropdown">
+        <li><a href="/dashboard/parts" class="{% if active_page == 'parts' %}active{% endif %}">Parts</a></li>
+        <li><a href="/dashboard/distributors" class="{% if active_page == 'distributors' %}active{% endif %}">Distributors</a></li>
+        <li><a href="/dashboard/packages" class="{% if active_page == 'packages' %}active{% endif %}">Packages</a></li>
+        <li><a href="/dashboard/unmatched" class="{% if active_page == 'unmatched' %}active{% endif %}">Unmatched</a></li>
+        <li><a href="/dashboard/upload-invoice" class="{% if active_page == 'upload' %}active{% endif %}">Upload</a></li>
+      </ul>
+    </li>
+    <li class="nav-group">
+      <button type="button" class="nav-group-toggle {% if active_page in stock_pages %}active{% endif %}" onclick="toggleNavGroup(this)">Stock <span class="caret">▾</span></button>
+      <ul class="nav-dropdown">
+        <li><a href="/dashboard/stock" class="{% if active_page == 'stock' %}active{% endif %}">Stock</a></li>
+        <li><a href="/dashboard/usage" class="{% if active_page == 'usage' %}active{% endif %}">Usage</a></li>
+        <li><a href="/dashboard/log" class="{% if active_page == 'log' %}active{% endif %}">Log</a></li>
+        <li><a href="/dashboard/alerts" class="{% if active_page == 'alerts' %}active{% endif %}">Alerts</a></li>
+        <li><a href="/dashboard/top-movers" class="{% if active_page == 'top_movers' %}active{% endif %}">Movers</a></li>
+        <li><a href="/dashboard/reorders" class="{% if active_page == 'reorders' %}active{% endif %}">Orders</a></li>
+      </ul>
+    </li>
+    <li class="nav-group">
+      <button type="button" class="nav-group-toggle {% if active_page in fleet_pages %}active{% endif %}" onclick="toggleNavGroup(this)">Fleet <span class="caret">▾</span></button>
+      <ul class="nav-dropdown">
+        <li><a href="/dashboard/techs" class="{% if active_page == 'techs' %}active{% endif %}">Techs</a></li>
+        <li><a href="/dashboard/trucks" class="{% if active_page == 'trucks' %}active{% endif %}">Trucks</a></li>
+        <li><a href="/dashboard/warehouses" class="{% if active_page == 'warehouses' %}active{% endif %}">Warehouses</a></li>
+      </ul>
+    </li>
+    <li class="nav-group">
+      <button type="button" class="nav-group-toggle {% if active_page in field_pages %}active{% endif %}" onclick="toggleNavGroup(this)">Field Ops <span class="caret">▾</span></button>
+      <ul class="nav-dropdown">
+        <li><a href="/dashboard/jobs-today" class="{% if active_page == 'jobs_today' %}active{% endif %}">Jobs Today</a></li>
+        <li><a href="/dashboard/overview-today" class="{% if active_page == 'overview_today' %}active{% endif %}">Overview</a></li>
+        <li><a href="/dashboard/door-orders" class="{% if active_page == 'door_orders' %}active{% endif %}">Doors</a></li>
+        <li><a href="/dashboard/disputes" class="{% if active_page == 'disputes' %}active{% endif %}">Disputes</a></li>
+        <li><a href="/dashboard/commission" class="{% if active_page == 'commission' %}active{% endif %}">Commission</a></li>
+      </ul>
+    </li>
+    <li><a href="/logout">Logout</a></li>
+  </ul>
+  <div style="display:flex;align-items:center;gap:0.5rem">
+    <span style="font-size:var(--text-xs);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:oklch(0.6 0.012 50)">View</span>
+    <select id="warehouse-select" class="warehouse-select" onchange="changeWarehouse(this.value)">
+      <option value="all" {% if selected_warehouse == 'all' %}selected{% endif %}>Combined — All Warehouses</option>
+      {% for w in warehouses %}
+      <option value="{{ w.id }}" {% if selected_warehouse == w.id %}selected{% endif %}>{{ w.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <script>
+  function changeWarehouse(val) {
+    var url = new URL(window.location.href);
+    url.searchParams.set('wh', val);
+    window.location.href = url.toString();
+  }
+  // Click-to-toggle (not just :hover) so the grouped nav menus work on
+  // touch/tablet, not just desktop mouse-hover.
+  function toggleNavGroup(btn) {
+    var group = btn.closest('.nav-group');
+    var wasOpen = group.classList.contains('open');
+    document.querySelectorAll('.nav-group.open').forEach(function (g) { g.classList.remove('open'); });
+    if (!wasOpen) group.classList.add('open');
+  }
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest('.nav-group')) {
+      document.querySelectorAll('.nav-group.open').forEach(function (g) { g.classList.remove('open'); });
+    }
+  });
+  </script>
+</nav>
+{% if demo_mode %}
+<div class="demo-bar" role="note">
+  <span class="demo-bar-tag">Demo</span>
+  <span>Datos ficticios · se reinicia cada noche · los correos se simulan</span>
+  <span class="demo-bar-links">
+    <a href="/demo">Recorrido guiado</a>
+    <a href="{{ demo_pwa_url }}" target="_blank" rel="noopener">App del técnico ↗</a>
+  </span>
+</div>
+{% endif %}
+<main class="main">
+{% if flash %}
+<div class="flash flash-{{ flash.kind }}">
+{% if flash.kind == 'error' %}<strong>⚠️ Error</strong>{% elif flash.kind == 'warning' %}<strong>⚠️ Warning</strong>{% endif %}
+{{ flash.msg }}
+</div>
+{% endif %}
+{% block content %}{% endblock %}
+</main>
+<script>
+function filterTable(inputId, tableId) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  const q = input.value.toLowerCase();
+  const rows = document.querySelectorAll('#' + tableId + ' tbody tr');
+  rows.forEach(r => {
+    r.style.display = r.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+</script>
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

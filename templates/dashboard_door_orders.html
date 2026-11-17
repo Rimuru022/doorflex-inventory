@@ -1,0 +1,72 @@
+{% extends "dashboard_base.html" %}
+{% block title %}Doors{% endblock %}
+{% set active_page = "door_orders" %}
+{% block content %}
+{% if pending %}
+<div class="section">
+  <div class="section-header"><h2>🚪 Doors Pending Order <span class="count">captured by techs — not yet placed with distributor</span></h2></div>
+  <table>
+    <thead><tr><th>Captured</th><th>Tech</th><th>Item</th><th>Size</th><th>Windows</th><th>Color</th><th>Customer</th><th>Job WO</th><th></th></tr></thead>
+    <tbody>
+      {% for o in pending %}
+      <tr>
+        <td class="text-xs text-muted">{{ o.captured_at }}</td>
+        <td>{{ o.tech_name }}</td>
+        <td>
+          {% if o.needs_distributor_quote %}<span style="color:var(--color-danger);font-weight:700">⚠ Get distributor quote first</span><br>{% endif %}
+          <strong>{{ o.item_number or 'Verify with distributor' }}</strong>
+          <div class="text-xs text-muted">{{ o.brand }} · {{ o.model_label }}{% if o.series_design %} · {{ o.series_design }}{% endif %}{% if o.insulation %} · {{ o.insulation }}{% endif %}{% if o.construction %} · {{ o.construction }}{% if o.insulated %} (insulated){% endif %}{% endif %}</div>
+        </td>
+        <td>{{ o.width }} × {{ o.height }}</td>
+        <td>{% if o.windows %}{{ o.window_style }}{% if o.glass_type %}<br><span class="text-xs text-muted">{{ o.glass_type }}</span>{% endif %}{% else %}—{% endif %}</td>
+        <td>{{ o.color_base }}{% if o.color_overlay and o.color_overlay != o.color_base %} / {{ o.color_overlay }}{% endif %}</td>
+        <td class="text-sm">{{ o.customer_address }}</td>
+        <td class="text-xs text-muted">{{ o.job_wo }}</td>
+        <td>
+          <form method="post" action="/dashboard/door-orders/status" class="inline-form">
+            <input type="hidden" name="order_id" value="{{ o.id }}">
+            <input type="hidden" name="new_status" value="ordered">
+            <button type="submit" class="btn btn-primary btn-sm">Mark ordered</button>
+          </form>
+          <form method="post" action="/dashboard/door-orders/status" class="inline-form">
+            <input type="hidden" name="order_id" value="{{ o.id }}">
+            <input type="hidden" name="new_status" value="cancelled">
+            <button type="submit" class="btn btn-secondary btn-sm">Cancel</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="section"><p class="text-muted">No door orders pending — all caught up.</p></div>
+{% endif %}
+
+{% if ordered %}
+<div class="section">
+  <div class="section-header"><h2>📦 Ordered — awaiting install</h2></div>
+  <table>
+    <thead><tr><th>Captured</th><th>Tech</th><th>Item</th><th>Customer</th><th>Job WO</th><th></th></tr></thead>
+    <tbody>
+      {% for o in ordered %}
+      <tr>
+        <td class="text-xs text-muted">{{ o.captured_at }}</td>
+        <td>{{ o.tech_name }}</td>
+        <td>{{ o.item_number or o.model_label }}</td>
+        <td class="text-sm">{{ o.customer_address }}</td>
+        <td class="text-xs text-muted">{{ o.job_wo }}</td>
+        <td>
+          <form method="post" action="/dashboard/door-orders/status" class="inline-form">
+            <input type="hidden" name="order_id" value="{{ o.id }}">
+            <input type="hidden" name="new_status" value="installed">
+            <button type="submit" class="btn btn-primary btn-sm">Mark installed</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

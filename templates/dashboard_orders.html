@@ -1,0 +1,65 @@
+{% extends "dashboard_base.html" %}
+{% block title %}Orders{% endblock %}
+{% set active_page = "reorders" %}
+{% block content %}
+<div class="section">
+  <div class="section-header"><h2>Pending Reorders <span class="count">{{ pending|length }}</span></h2></div>
+  <p class="text-xs text-muted" style="margin-bottom:var(--space-md)">
+    Orders the Friday run sent (or would send) to distributors. When the parts arrive, mark them as ready —
+    this clears the pending state and, if the warehouse stock has been updated back above the minimum,
+    it resolves automatically too.
+  </p>
+  {% if pending %}
+  <table id="reorder_table">
+    <thead>
+      <tr>
+        <th>Part</th><th>Warehouse</th><th>Distributor</th><th>Qty</th><th>Status</th><th>Created</th><th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in pending %}
+      <tr>
+        <td><strong>{{ r.part_name }}</strong><br><span class="text-xs text-muted">{{ r.part_id }}</span></td>
+        <td>{{ r.warehouse_name or r.warehouse_id }}</td>
+        <td>{{ r.distributor_name or r.distributor_id }}</td>
+        <td class="text-muted">{{ r.qty }}</td>
+        <td><span class="status-badge {{ 'status-warn' if r.status == 'pending' else 'status-ok' }}">{{ r.status }}</span></td>
+        <td class="text-muted">{{ r.created_at|phx }}</td>
+        <td>
+          <form method="post" action="/dashboard/reorders/{{ r.id }}/resolve" onsubmit="return confirm('Mark this reorder as received? (parts received — will restock)')">
+            <button type="submit" class="btn btn-primary btn-sm">Mark as Ready</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="text-sm text-muted">No pending reorders. All caught up.</p>
+  {% endif %}
+</div>
+
+<div class="section">
+  <div class="section-header"><h2>Recently Resolved</h2></div>
+  {% if history %}
+  <table>
+    <thead>
+      <tr><th>Part</th><th>Warehouse</th><th>Distributor</th><th>Qty</th><th>Resolved</th></tr>
+    </thead>
+    <tbody>
+      {% for r in history %}
+      <tr>
+        <td>{{ r.part_name }} <span class="text-xs text-muted">({{ r.part_id }})</span></td>
+        <td>{{ r.warehouse_name or r.warehouse_id }}</td>
+        <td>{{ r.distributor_name or r.distributor_id }}</td>
+        <td class="text-muted">{{ r.qty }}</td>
+        <td class="text-muted">{{ r.resolved_at|phx }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="text-sm text-muted">Nothing resolved yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,79 @@
+{% extends "dashboard_base.html" %}
+{% block title %}Alerts{% endblock %}
+{% set active_page = "alerts" %}
+{% block content %}
+{% if stock_alerts %}
+<div class="section">
+  <div class="section-header"><h2>⚠️ Stock Shortfalls <span class="count">invoice requested more than available</span></h2></div>
+  <table>
+    <thead><tr><th>Part</th><th>Requested</th><th>Available</th><th>Truck</th><th>Warehouse</th><th>Invoice</th><th>Date</th><th></th></tr></thead>
+    <tbody>
+      {% for a in stock_alerts %}
+      <tr>
+        <td>{{ a.part_name }}</td>
+        <td style="color:var(--color-danger);font-weight:600">{{ a.requested_qty }}</td>
+        <td>
+          {% if a.live_truck_qty > 0 %}
+            {{ a.live_truck_qty }} on truck
+          {% else %}
+            <span style="color:var(--color-danger);font-weight:600">0 on truck</span>
+          {% endif %}
+          {% if a.live_wh_qty > 0 %}<br><span class="text-xs text-muted">{{ a.live_wh_qty }} in warehouse</span>{% endif %}
+        </td>
+        <td>{{ a.truck_id }}{% if a.truck_name %} <span class="text-xs text-muted">({{ a.truck_name }})</span>{% endif %}</td>
+        <td>{{ a.warehouse_id }}{% if a.warehouse_name %} <span class="text-xs text-muted">({{ a.warehouse_name }})</span>{% endif %}</td>
+        <td class="text-muted text-xs">{{ a.invoice_id }}</td>
+        <td class="text-muted text-xs">{{ a.created_at }}</td>
+        <td>
+          <form method="post" action="/dashboard/alerts/stock/resolve" class="inline-form">
+            <input type="hidden" name="alert_id" value="{{ a.id }}">
+            <button type="submit" class="btn btn-secondary btn-sm">Resolve</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% if alerts.truck_items %}
+<div class="section">
+  <div class="section-header"><h2>🔴 Truck Low Stock</h2></div>
+  <table>
+    <thead><tr><th>Truck</th><th>Name</th><th>Part</th><th>Current</th><th>Min</th></tr></thead>
+    <tbody>
+      {% for a in alerts.truck_items %}
+      <tr>
+        <td>{{ a.truck_id }}</td>
+        <td class="text-sm">{{ a.truck_name }}</td>
+        <td>{{ a.part_name }}</td>
+        <td style="color:var(--color-danger);font-weight:600">{{ a.quantity }}</td>
+        <td class="text-muted">{{ a.min_threshold }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% if alerts.warehouse_items %}
+<div class="section">
+  <div class="section-header"><h2>🔴 Warehouse Low Stock</h2></div>
+  <table>
+    <thead><tr><th>Warehouse</th><th>Part</th><th>Current</th><th>Min</th></tr></thead>
+    <tbody>
+      {% for a in alerts.warehouse_items %}
+      <tr>
+        <td>{{ a.warehouse_name }}</td>
+        <td>{{ a.part_name }}</td>
+        <td style="color:var(--color-danger);font-weight:600">{{ a.quantity }}</td>
+        <td class="text-muted">{{ a.min_threshold }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% if not alerts.truck_items and not alerts.warehouse_items and not stock_alerts %}
+<div class="section"><p class="text-muted">All stock levels are above minimum thresholds.</p></div>
+{% endif %}
+{% endblock %}

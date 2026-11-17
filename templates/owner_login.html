@@ -1,0 +1,18 @@
+{% extends "owner_base.html" %}
+{% block title %}Owner Login{% endblock %}
+{% block content %}
+<div style="max-width:420px;margin:8vh auto">
+  <div class="form-card" style="padding:var(--space-2xl)">
+    <div style="text-align:center;margin-bottom:var(--space-lg)">
+      <div style="font-weight:800;font-size:1.3rem;letter-spacing:0.06em;color:var(--color-text)">DOORFLEX</div>
+      <div style="font-size:var(--text-sm);color:var(--color-muted)">Owner Panel</div>
+    </div>
+    {% if error %}<div class="flash flash-error" style="margin-bottom:var(--space-md)">{{ error }}</div>{% endif %}
+    <form method="post" action="{{ admin_path }}/login">
+      <label>Owner password</label>
+      <input type="password" name="password" autocomplete="current-password" autofocus>
+      <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;margin-top:var(--space-lg)">Sign In</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
